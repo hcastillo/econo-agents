@@ -1,0 +1,57 @@
+# ver cual es el numero de guru más seguido??
+# jugar con epsilon=0,1 y itou=50, beta = 0,50,100
+        
+def f(x):
+    return x**2*np.exp(-x**2)
+x = np.linspace ( start = 0., stop = 3, num = 51)
+y = f(x) 
+plt.plot(x, y)
+plt.show()
+
+def g(x):
+    return x*np.exp(-x)
+xx = np.arange  ( start = 0.
+                , stop = 3.
+                , step = 0.05
+                )
+yy = g(xx)
+plt.plot( xx, yy, 'r-' )
+plt.show()
+plt.axis([0, 6, -0.05, 0.6]) 
+plt.xlabel('X-axis')
+plt.ylabel('Y-axis')
+plt.legend( [ 'f(x) = x^2*exp(-x^2)'   # This is f(x)
+            , 'g(x) = x*exp(-x)'       # This is g(x)
+            ] )
+plt.title('multiple Matplotlib curves in a single decorated figure');
+
+plt.savefig("fichero.pdf")
+
+plt.figure(1)
+
+
+dates = list(D.keys())           # list() needed for python 3.x
+
+--
+prices = list(D.values())        # ditto
+ax.plot_date(dates, prices, '-') 
+
+
+------
+
+
+
+xx1 = []
+xx2 = []
+yy = []
+for i in range(len(Status.hgurus)):
+    yy.append( i)
+    xx1.append( len(Status.hgurus[i] ))
+    total=0
+    for j in Status.hgurus[i]:
+        total += Status.interlinkIncomings[i][j]
+    xx2.append( total / 10 ) 
+
+
+plt.plot(yy,xx2)
+plt.show()

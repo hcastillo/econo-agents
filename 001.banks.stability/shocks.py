@@ -16,7 +16,7 @@ import sys
 
 
 class Config:
-    T = 500   # time (1000)
+    T = 1000  # time (1000)
     N = 100   # number of banks
     S = 10    # number of shocks to provoke
     α = 0.3   # alpha, liquidation cost of collaterals
@@ -854,10 +854,10 @@ def show_graph():
     for i in range(len(Status.hgurus)):
         yy.append(i)
         xx1.append(len(Status.hgurus[i]))
-        total = 0
-        for j in Status.hgurus[i]:
-            total += Status.interlinkIncomings[i][j]
-        xx2.append(total)
+        ##total = 0
+        ##for j in Status.hgurus[i]:
+        ##    total += Status.interlinkIncomings[i][j]
+        xx2.append(Status.hgurus[0])
 
     fig, ax = plt.subplots()
     ax.plot(xx1, "r-")
