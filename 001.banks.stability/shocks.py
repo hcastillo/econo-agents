@@ -76,6 +76,7 @@ class Status:
     hmortigurus = []
     hprice = []
     failures = []
+    liquiditymed = []
 
     mark = 0
     
@@ -617,13 +618,10 @@ def doSimulation():
         guruperc = 0.0
         incominglinkperc = 0.0
         enne = 0.0
-        minchia = 0.0
-        minchia1 = 0.0
         enne = Config.N
         minchia = Status.gurus[0]
         minchia1 = Status.banks[ Status.gurus[0] ].incomingLink
         guruperc = (minchia / enne)
-        ## incominglinkperc = (minchia1 / enne)
 
         for i in range(len(Status.banks)):
             fileLog(8,"%d %d %f %d\n"%(t, i, Status.banks[i].equity, simulation))
@@ -844,35 +842,59 @@ def doSimulation():
         Status.hmortigurus.append( Status.mortigurus.copy() )
         Status.hprice.append( Status.price )
         Status.failures.append( Status.totFailures )
+        Status.liquiditymed.append( liquiditymedia )
 
 
-
-def show_graph():
+def show_graph(show):
     xx1 = []
-    xx2 = []
+    interlinks = []
+    failures = []
+    liquiditymed = []
     yy = []
-    for i in range(len(Status.hgurus)):
+    for i in range(100,len(Status.hgurus)):
         yy.append(i)
         xx1.append(len(Status.hgurus[i]))
-        ##total = 0
-        ##for j in Status.hgurus[i]:
-        ##    total += Status.interlinkIncomings[i][j]
-        xx2.append(Status.hgurus[0])
+        interlinks.append(Status.interlinkIncomings[i][0])
+        failures.append(Status.failures[i])
+        liquiditymed.append( Status.liquiditymed[i] )
 
     fig, ax = plt.subplots()
-    ax.plot(xx1, "r-")
+    ax.plot(yy,xx1, "r-")
     ax.set_title("ϵ=%s tinv=%s" % (Config.ϵ, Config.T_inv))
-    ax.set_ylabel("num_cores")
+    ax.set_ylabel("num_cores(red)")
     ax2 = ax.twinx()
-    ax2.plot(xx2, "b-")
-    ax2.set_ylabel("incoming_links")
-    plt.show()
+    ax2.plot(yy,interlinks, "b-")
+    ax2.set_ylabel("incoming_links(blue)")
+    if not show:
+        plt.show()
+    else:
+        plt.savefig("eps%s.tinv%s.incoming.png" % (Config.ϵ, int(Config.T_inv)))
+        fig, ax = plt.subplots()
+        ax.plot(yy, xx1, "r-")
+        ax.set_title("ϵ=%s tinv=%s" % (Config.ϵ, Config.T_inv))
+        ax.set_ylabel("num_cores(red)")
+        ax2 = ax.twinx()
+        ax2.plot(yy, failures, "b-")
+        ax2.set_ylabel("failures(blue)")
+        plt.savefig("eps%s.tinv%s.failures.png" % (Config.ϵ, int(Config.T_inv)))
+
+        fig, ax = plt.subplots()
+        ax.plot(yy, xx1, "r-")
+        ax.set_title("ϵ=%s tinv=%s" % (Config.ϵ, Config.T_inv))
+        ax.set_ylabel("num_cores(red)")
+        ax2 = ax.twinx()
+        ax2.plot(yy, liquiditymed, "b-")
+        ax2.set_ylabel("liq_med(blue)")
+        plt.savefig("eps%s.tinv%s.liq.png" % (Config.ϵ, int(Config.T_inv)))
+
 
 parser = argparse.ArgumentParser(description="Interbank market")
 parser.add_argument("--graph",action="store_true",help="Shows the graph")
 parser.add_argument("--files",action="store_true",help="Generates in output/* the files")
 parser.add_argument("--tinv",type=str,help="Value for t_inv")
 parser.add_argument("--epsilon",type=str,help="Value for epsilon")
+parser.add_argument("--savegraph",action="store_true",help="Save the graph")
+
 args = parser.parse_args()
 
 if args.files:
@@ -890,7 +912,9 @@ fileManagementClose()
 
 
 if args.graph:
-    show_graph()
+    show_graph(0)
+if args.savegraph:
+    show_graph(1)
 
 # In[13]:
 
