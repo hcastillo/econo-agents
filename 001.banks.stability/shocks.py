@@ -31,9 +31,9 @@ class Config:
     τ = 1     # tau
     η = 0.09  #  eta 
     prud = 0.045
-    ϵ = 1     #  epsilon
-    
-    T_inv = 0.0
+
+    ϵ = 0.5   #  epsilon
+    T_inv = 50.0
 
     # banks parameters
     initial_loan = 120.0
@@ -77,7 +77,8 @@ class Status:
     hprice = []
     failures = []
     liquiditymed = []
-
+    liquidityguru = []
+    
     mark = 0
     
     @staticmethod
@@ -843,6 +844,7 @@ def doSimulation():
         Status.hprice.append( Status.price )
         Status.failures.append( Status.totFailures )
         Status.liquiditymed.append( liquiditymedia )
+        Status.liquidityguru.append( Status.banks[ Status.gurus[0] ].liquidity )
 
 
 def show_graph(show):
@@ -850,6 +852,7 @@ def show_graph(show):
     interlinks = []
     failures = []
     liquiditymed = []
+    liquidityguru = []
     yy = []
     for i in range(100,len(Status.hgurus)):
         yy.append(i)
@@ -857,6 +860,14 @@ def show_graph(show):
         interlinks.append(Status.interlinkIncomings[i][0])
         failures.append(Status.failures[i])
         liquiditymed.append( Status.liquiditymed[i] )
+        liquidityguru.append( Status.liquidityguru[i] )
+
+
+    plt.plot( yy, liquiditymed, 'r-' ,yy, liquidityguru,'b--')
+    plt.suptitle("ϵ=%s tinv=%s" % (Config.ϵ, Config.T_inv))
+    plt.xlabel("liquidity_med(red)")
+    plt.ylabel("liquidity_guru(blue)")
+    plt.savefig("eps%s.tinv%s.liqguru.svg" % (Config.ϵ, int(Config.T_inv)))
 
     fig, ax = plt.subplots()
     ax.plot(yy,xx1, "r-")
@@ -868,7 +879,7 @@ def show_graph(show):
     if not show:
         plt.show()
     else:
-        plt.savefig("eps%s.tinv%s.incoming.png" % (Config.ϵ, int(Config.T_inv)))
+        plt.savefig("eps%s.tinv%s.incoming.svg" % (Config.ϵ, int(Config.T_inv)))
         fig, ax = plt.subplots()
         ax.plot(yy, xx1, "r-")
         ax.set_title("ϵ=%s tinv=%s" % (Config.ϵ, Config.T_inv))
@@ -876,8 +887,7 @@ def show_graph(show):
         ax2 = ax.twinx()
         ax2.plot(yy, failures, "b-")
         ax2.set_ylabel("failures(blue)")
-        plt.savefig("eps%s.tinv%s.failures.png" % (Config.ϵ, int(Config.T_inv)))
-
+        plt.savefig("eps%s.tinv%s.failures.svg" % (Config.ϵ, int(Config.T_inv)))
         fig, ax = plt.subplots()
         ax.plot(yy, xx1, "r-")
         ax.set_title("ϵ=%s tinv=%s" % (Config.ϵ, Config.T_inv))
@@ -885,7 +895,7 @@ def show_graph(show):
         ax2 = ax.twinx()
         ax2.plot(yy, liquiditymed, "b-")
         ax2.set_ylabel("liq_med(blue)")
-        plt.savefig("eps%s.tinv%s.liq.png" % (Config.ϵ, int(Config.T_inv)))
+        plt.savefig("eps%s.tinv%s.liq.svg" % (Config.ϵ, int(Config.T_inv)))
 
 
 parser = argparse.ArgumentParser(description="Interbank market")
