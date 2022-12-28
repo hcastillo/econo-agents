@@ -19,7 +19,7 @@ class Config:
     c = 1     # parameter bankruptcy cost equation
     α = 0.08  # alpha, ratio equity-loan
     g = 1.1   # variable cost
-    ω = 0.002 # markdonw interest rate
+    ω = 0.002 # markdonw interest rate ( the higher it is, the monopolistic power of banks)
     λ = 0.3   # credit assets rate
     d = 100   # location cost
     e = 0.1   # sensivity
@@ -28,17 +28,23 @@ class Config:
     K_i0 = 100
     A_i0 = 20
     L_i0 = 80
-    pi_i0= 0
+    π_i0 = 0
 
 class Statistics:
     pass
 
 class Status:
     maxEquity = 0.0
-    banks = BankSector()
     firms = []
-
+    firmsKsum = 0
+    firmsAsum = 0
     t = 0
+
+    firmIdMax = 0
+    def getNewFirmId():
+        Status.firmIdMax += 1
+        return Status.firmIdMax
+
 
     @staticmethod
     def initialize():
@@ -46,38 +52,114 @@ class Status:
             Status.firms.append( Firm() )
 
 class Firm():
-    K = Config.K_i0
-    A = Config.A_i0
-    r = 0
-    L = 0
-    π = 0
+    K = Config.K_i0   # capital
+    A = Config.A_i0   # asset
+    r = 0             # rate money is given by banksector
+    L = 0             # credit 
+    π = 0             # profit
+    u = 0
+
+    def __init__(self):
+        self.id = Status.getNewFirmId()
+
+    def determineCredit(self):
+        # (equation 11)
+        return Config.λ * BankSector.L * self.K / Status.firmsKsum + (1 - Config.λ) * BankSector.L * self.A / Status.firmsAsum
+
+    def determineInterestRate(self):
+        # (equation 12)
+        return (2 + self.A ) / (  2 * Config.c * Config.g * ( 1/ ( Config.c * Config.φ ) + self.π + self.A  ) + \
+                                  2 * Config.c * Config.g * BankSector.L * ( Config.λ*self.__ratioK() + (1-Config.λ)*self.__ratioA() ) )
+    def __ratioK(self):
+        return self.K / Status.firmsKsum
+    def __ratioA(self):
+        return self.A / Status.firmsAsum
+
+    def determineCapital(self):
+        # equation 9
+        return ( Config.φ - Config.g * self.r ) / Config.c * Config.φ  * Config.g * self.r + self.A / 2 * Config.g * self.r
+
+    def determineU(self):
+        # equation 7
+        return 1/Config.φ* ( Config.g*self.r - self.A / self.K )
+
+    def determineAssets(self):
+        return self.K - self.L
+
+    def determineProfit(self):
+        return ( self.u * Config.φ - Config.g * self.r ) / self.K
 
 class BankSector():
-    pass
+    L = 0
+    E = 0
+    D = 0
+    π = 0
+
+    def determineProfit():
+        # equation 13
+        profitDeposits = 0
+        for firm in Status.firms:
+            profitDeposits += firm.r * firm.L
+        return profitDeposits  - BankSector.getAverageRate() * ( (1-Config.ω)*BankSector.D + BankSector.E )
+
+    def getAverageRate():
+        average = 0
+        for firm in Status.firms:
+            average += firm.r
+        print("%s %s"%(Status.t,len(Status.firms)))
+        return average / len(Status.firms)
+
+    def determineEquity():
+        # equation 14
+        return BankSector.π + BankSector.E - BankSector.badDebt
 
 
-def newFirms():
-    pass
+def removeBankruptedFirms():
+    BankSector.badDebt =  0
+    for firm in Status.firms[:]:
+        if (firm.π+firm.A) < 0:
+            # bankrupt: we sum Bn-1
+            BankSector.badDebt += ( firm.L - firm.K )
+            Status.firms.remove( firm )
 
-def detectBankruptedFirms(iteration):
-    pass
+def addFirms(Nentry):
+    for i in range(Nentry):
+        Status.firms.append( Firm() )
 
-def addFirms(iteration,Nentry):
-    pass
+def updateFirms():
+    # update Kt-1 and At-1 (Status.firmsKsum && Status.firmsAsum:
+    Status.firmsAsum = 0
+    Status.firmsKsum = 0
+    for firm in Status.firms:
+        Status.firmsAsum += firm.A
+        Status.firmsKsum += firm.K
+    for firm in Status.firms:
+        firm.L = firm.determineCredit()
+        firm.r = firm.determineInterestRate()
+        firm.K = firm.determineCapital()
+        firm.u = firm.determineU()
+        firm.A = firm.determineAssets()
+        firm.π = firm.determineProfit()
 
-def updateBalances(iteration):
-    pass
 
-def determineNentry(iteration):
-    pass
+def determineNentry():
+    # equation 15
+    return round( Config.Ñ / (1 + math.exp( Config.d * ( BankSector.getAverageRate()- Config.e ))) )
+
+def updateBankSector():
+    BankSector.π = BankSector.determineProfit()
+    BankSector.E = BankSector.determineEquity()
+    # ¿algo mas?
 
 def doSimulation():
     Status.initialize()
     for t in range(Config.T):
         Status.t = t
-        detectBankruptedFirms(t)
-        addFirms(t,determineNentry(t))
-        updateBalances(t)
+        removeBankruptedFirms()
+        addFirms(determineNentry())
+        updateFirms()
+        updateBankSector()
+
 
 def show_graph(show):
     xx1 = []
@@ -132,15 +214,15 @@ def show_graph(show):
 
 parser = argparse.ArgumentParser(description="Fluctuations firms/banks")
 parser.add_argument("--graph",action="store_true",help="Shows the graph")
-parser.add_argument("--sizeparam",type(int),help="Size parameter (default=%s)" % Config.N_1)
+parser.add_argument("--sizeparam",type=int,help="Size parameter (default=%s)" % Config.Ñ)
 parser.add_argument("--savegraph",action="store_true",help="Save the graph")
 
 args = parser.parse_args()
 
 if args.sizeparam:
-    Config.N_1 = int(args.sizeparam)
-    if Config.N_1<0 or Config.N_1>Config.N:
-        print("value not valid for N_: must be 0..%s"%Config.N)
+    Config.Ñ = int(args.sizeparam)
+    if Config.Ñ<0 or Config.Ñ>Config.N:
+        print("value not valid for Ñ: must be 0..%s"%Config.N)
 
 doSimulation()
 
