@@ -195,8 +195,8 @@ def determineNentry():
     # equation 15
     return round( Config.Ñ / (1 + math.exp( Config.d * ( BankSector.getAverageRate()- Config.e ))) )
 
-def updateBankL()
-    # BankSector.D = BankSector.L - BankSector.E
+def updateBankL():
+    BankSector.L = BankSector.E / Config.v
 
 def updateBankSector():
     BankSector.π = BankSector.determineProfit()
@@ -207,6 +207,7 @@ def doSimulation(doDebug=False):
     Status.initialize()
     updateFirmsStatus()
     updateBankL()
+    BankSector.D = BankSector.L - BankSector.E
     for t in range(Config.T):
         Status.t = t
         Statistics.log("t=%4s [firms] n=%s,sumA=%.2f,sumL=%.2f,sumK=%.2f,sumπ=%2.f" % ( Status.t,len(Status.firms), \
@@ -217,6 +218,7 @@ def doSimulation(doDebug=False):
                                                                    BankSector.B,BankSector.π))
         removeBankruptedFirms()
         newFirmsNumber = determineNentry()
+
         Statistics.log("        - add %d new firms (Nentry)" % newFirmsNumber )
         addFirms(newFirmsNumber)
         updateBankL()
