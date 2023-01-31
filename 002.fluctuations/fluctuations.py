@@ -8,7 +8,8 @@ import math
 import matplotlib.pyplot as plt
 import argparse
 import sys,code
-
+from sklearn.linear_model import LinearRegression
+from pdb import set_trace
 
 class Config:
     T = 1000  # time (1000)
@@ -17,7 +18,7 @@ class Config:
 
     φ = 0.1   # capital productivity (constant and uniform)
     c = 1     # parameter bankruptcy cost equation
-    ##### not used -> α = 0.08  # alpha, ratio equity-loan
+    α = 0.08  # alpha, ratio equity-loan
     g = 1.1   # variable cost
     ω = 0.002 # markdonw interest rate ( the higher it is, the monopolistic power of banks)
     λ = 0.3   # credit assets rate
@@ -46,6 +47,7 @@ class Status:
     firmsAsum = 0.0
     firmsLsum = 0.0
     firmsπsum = 0.0
+    numFailuresGlobal = 0
     t = 0
 
 
@@ -91,9 +93,9 @@ class Firm():
     def determineCapital(self):
         # equation 9
         ## este es el negativo
-        # Statistics.log( "%s -%s * %s ) / %s * %s  * %s * %s +%s / 2 * %s * %s" %
+        #Statistics.log( "(%s -%s * %s ) / (%s * %s  * %s * %s)   + %s / (2 * %s * %s)" %
         #                  (Config.φ ,Config.g, self.r, Config.c, Config.φ, Config.g,  self.r, self.A , Config.g , self.r))
-        return ( Config.φ - Config.g * self.r ) / Config.c * Config.φ  * Config.g * self.r + (self.A / 2 * Config.g * self.r)
+        return ( Config.φ - Config.g * self.r ) / Config.c * Config.φ  * Config.g * self.r + (self.A / (2 * Config.g * self.r))
 
 
     def determineU(self):
@@ -110,7 +112,7 @@ class Firm():
         return result
 
 class BankSector():
-    E = Config.N * Config.L_i0
+    E = Config.N * Config.L_i0 * Config.v
     B = Config.B_i0   # bad debt
     D = 0
     π = 0
@@ -126,7 +128,7 @@ class BankSector():
             profitDeposits += firm.r * firm.L
         BankSector.D =BankSector.determineDeposits()
         resto = BankSector.getAverageRate() * ( (1-Config.ω)*BankSector.D + BankSector.E )
-        Statistics.log("        - bank profit= dep(%s) - %s , which  %s * [(1-w)*%s+%s]"%( profitDeposits  ,resto, BankSector.getAverageRate(), BankSector.D , BankSector.E ))
+        ###Statistics.log("        - bank profit= dep(%s) - %s , which  %s * [(1-w)*%s+%s]"%( profitDeposits  ,resto, BankSector.getAverageRate(), BankSector.D , BankSector.E ))
         return profitDeposits  - BankSector.getAverageRate() * ( (1-Config.ω)*BankSector.D + BankSector.E )
 
     def getAverageRate():
@@ -144,6 +146,7 @@ class BankSector():
 
 def removeBankruptedFirms():
     i = 0
+
     BankSector.B  = 0.0
     for firm in Status.firms[:]:
         if (firm.π+firm.A) < 0:
@@ -152,12 +155,15 @@ def removeBankruptedFirms():
             #Statistics.log( "    %s %s %s %s" % (firm.π,firm.A,firm.L,firm.K))
             BankSector.B += ( firm.L - firm.K )
             Status.firms.remove( firm )
+            Status.numFailuresGlobal += 1
             i += 1
     Statistics.log("        - removed %d firms %s" % ( i, "" if i==0 else " (next step B=%s)" % BankSector.B ))
+    return i
 
 def addFirms(Nentry):
     for i in range(Nentry):
         Status.firms.append( Firm() )
+    Statistics.log("        - add %d new firms (Nentry)" % Nentry)
 
 
 def updateFirmsStatus():
@@ -182,11 +188,16 @@ def updateFirms():
         firm.L = firm.determineCredit()
         totalL += firm.L
         firm.r = firm.determineInterestRate()
+        kantes= firm.K
         firm.K = firm.determineCapital()
+        #Statistics.log("firm%d. K=%f > K=%f" % (firm.id, kantes, firm.K))
+
         totalK += firm.K
         firm.u = firm.determineU()
+
         firm.A = firm.determineAssets()
         firm.π = firm.determineProfit()
+        #Statistics.log("  firm%s  π=%0.2f A=%0.2f K=%0.2f L=%0.2f r=%0.2f" %( firm.id,firm.π,firm.A ,firm.K, firm.L, firm.r))
         Status.firmsπsum += firm.π
     #Statistics.log("  K:%s L:%s pi:%s" % (totalK,totalL,Status.firmsπsum) )
     #code.interact(local=locals())
@@ -218,19 +229,17 @@ def doSimulation(doDebug=False):
                                                                    BankSector.B,BankSector.π))
         removeBankruptedFirms()
         newFirmsNumber = determineNentry()
-
-        Statistics.log("        - add %d new firms (Nentry)" % newFirmsNumber )
         addFirms(newFirmsNumber)
         updateBankL()
         updateFirms()
         updateBankSector()
 
         if doDebug:
-            from pdb import set_trace
             set_trace()
 
 
 def show_graph(show):
+    global xx,yy,zipf
     xx1 = []
     xx2 = []
     yy = []
@@ -241,12 +250,30 @@ def show_graph(show):
     plt.plot( yy, xx1, 'b-' )
     plt.ylabel("aggregate output(K)")
     plt.xlabel("time")
-    plt.savefig("agreggate_output.svg" )
+    plt.savefig("aggregate_output.svg" )
     plt.clf()
     plt.plot( yy, xx2, 'b-' )
     plt.ylabel("grow rates of agg output")
     plt.xlabel("time")
     plt.savefig("growrate_agg_output.svg" )
+    plt.clf()
+    zipf = {} # log K = freq
+    for firm in Status.firms:
+        x = math.log(firm.K)
+        if x in zipf:
+            zipf[x] += 1
+        else:
+            zipf[x] = 1
+    xx = []
+    yy = []
+    for x in zipf.keys():
+        xx.append(x)
+        yy.append(math.log(zipf[x]))
+    lr = LinearRegression()
+    lr.fit(np.array(xx).reshape(-1,1),np.array(yy))
+    plt.scatter(xx, yy, s=np.full(len(zipf.keys()),2), c=np.full(len(zipf.keys()),+random.uniform(0.3,0.8)), alpha=0.5)
+    plt.plot( lr.predict(np.array(xx[0:5]).reshape(-1,1)) , np.array(xx[0:5]),color="red")
+    plt.savefig('zipf_k_freq.svg')
     if show:
         plt.show()
 
@@ -286,6 +313,10 @@ if args.restore:
         pass
 else:
     doSimulation(args.debug)
+    if Status.numFailuresGlobal>0:
+        Statistics.log("[total failures in all times = %s " % Status.numFailuresGlobal )
+    else:
+        Statistics.log("[no failures]")
     if args.save:
         try:
             with open(args.save,'w') as file:
