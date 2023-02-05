@@ -238,6 +238,28 @@ def doSimulation(doDebug=False):
             set_trace()
 
 
+def zipf():
+    plt.clf()
+    zipf = {}  # log K = freq
+    for firm in Status.firms:
+        if round(firm.K)>0:
+            x = math.log( round(firm.K))
+            if x in zipf:
+                zipf[x] += 1
+            else:
+                zipf[x] = 1
+    xx = []
+    yy = []
+    for x in zipf.keys():
+        xx.append(x)
+        yy.append(math.log(zipf[x]))
+    lr = LinearRegression()
+    lr.fit(np.array(xx).reshape(-1, 1), np.array(yy))
+    plt.scatter(xx, yy, s=np.full(len(zipf.keys()), 2), c=np.full(len(zipf.keys()), +random.uniform(0.3, 0.8)),
+                alpha=0.5)
+    plt.plot(lr.predict(np.array(xx[0:5]).reshape(-1, 1)), np.array(xx[0:5]), color="red")
+    plt.savefig('zipf_k_freq.svg')
+
 def show_graph(show):
     global xx,yy,zipf
     xx1 = []
@@ -257,23 +279,7 @@ def show_graph(show):
     plt.xlabel("time")
     plt.savefig("growrate_agg_output.svg" )
     plt.clf()
-    zipf = {} # log K = freq
-    for firm in Status.firms:
-        x = math.log(firm.K)
-        if x in zipf:
-            zipf[x] += 1
-        else:
-            zipf[x] = 1
-    xx = []
-    yy = []
-    for x in zipf.keys():
-        xx.append(x)
-        yy.append(math.log(zipf[x]))
-    lr = LinearRegression()
-    lr.fit(np.array(xx).reshape(-1,1),np.array(yy))
-    plt.scatter(xx, yy, s=np.full(len(zipf.keys()),2), c=np.full(len(zipf.keys()),+random.uniform(0.3,0.8)), alpha=0.5)
-    plt.plot( lr.predict(np.array(xx[0:5]).reshape(-1,1)) , np.array(xx[0:5]),color="red")
-    plt.savefig('zipf_k_freq.svg')
+
     if show:
         plt.show()
 
