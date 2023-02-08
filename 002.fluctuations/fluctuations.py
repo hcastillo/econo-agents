@@ -7,7 +7,7 @@ import random
 import math
 import matplotlib.pyplot as plt
 import argparse
-import sys,code
+import sys,code,pickle
 from sklearn.linear_model import LinearRegression
 from pdb import set_trace
 
@@ -41,6 +41,40 @@ class Statistics:
         if Statistics.doLog:
             print(cadena)
 
+    firms = []
+    bankSector = []
+
+    def getStatistics(self):
+
+        bank={}
+        bank['L'] = BankSector.L
+        bank['D'] = BankSector.D
+        bank['avgrate'] = BankSector.getAverageRate()
+        bank['E'] = BankSector.E
+        bank['D'] = BankSector.D
+        bank['π'] = BankSector.π
+        firms=[]
+        for i in Status.firms:
+            firm={}
+            firm['K']=i.K
+            firm['r']=i.r
+            firm['L']=i.L
+            firm['π']=i.π
+            firm['u']=i.u
+            firms.append( firm )
+
+        Statistics.log("t=%4s [firms] n=%s,sumA=%.2f,sumL=%.2f,sumK=%.2f,sumπ=%2.f" % ( Status.t,len(Status.firms), \
+                                                                   Status.firmsAsum,Status.firmsLsum,
+                                                                   Status.firmsKsum,Status.firmsπsum))
+        Statistics.log("       [bank]  avgRate=%.2f,D=%.2f,L=%.2f,E=%0.2f,B=%.2f,π=%.2f" % ( bank['avgrate'] , \
+                                                                   BankSector.D,BankSector.L,BankSector.E,
+                                                                   BankSector.B,BankSector.π))
+        Statistics.log( " r=%s " % Status.firms[0].r )
+        Statistics.firms.append(firms)
+        Statistics.bankSector.append( bank )
+
+
+
 class Status:
     firms = []
     firmsKsum = 0.0
@@ -55,7 +89,7 @@ class Status:
     firmsGrowRate = []
 
     firmIdMax = 0
-    def getNewFirmId():
+    def getNewFirmId(self):
         Status.firmIdMax += 1
         return Status.firmIdMax
 
@@ -117,11 +151,11 @@ class BankSector():
     D = 0
     π = 0
 
-    def determineDeposits():
+    def determineDeposits(self):
         #as a residual from L = E+D, ergo D=L-E
         return BankSector.L - BankSector.E
 
-    def determineProfit():
+    def determineProfit(self):
         # equation 13
         profitDeposits = 0.0
         for firm in Status.firms:
@@ -131,13 +165,13 @@ class BankSector():
         ###Statistics.log("        - bank profit= dep(%s) - %s , which  %s * [(1-w)*%s+%s]"%( profitDeposits  ,resto, BankSector.getAverageRate(), BankSector.D , BankSector.E ))
         return profitDeposits  - BankSector.getAverageRate() * ( (1-Config.ω)*BankSector.D + BankSector.E )
 
-    def getAverageRate():
+    def getAverageRate(self):
         average = 0.0
         for firm in Status.firms:
             average += firm.r
         return average / len(Status.firms)
 
-    def determineEquity():
+    def determineEquity(self):
         # equation 14
         result = BankSector.π + BankSector.E - BankSector.B
         # Statistics.log("  bank E %s =%s + %s - %s" % (result,BankSector.π , BankSector.E , BankSector.B))
@@ -214,6 +248,8 @@ def updateBankSector():
     BankSector.E = BankSector.determineEquity()
     BankSector.D = BankSector.L - BankSector.E
 
+
+
 def doSimulation(doDebug=False):
     Status.initialize()
     updateFirmsStatus()
@@ -221,12 +257,11 @@ def doSimulation(doDebug=False):
     BankSector.D = BankSector.L - BankSector.E
     for t in range(Config.T):
         Status.t = t
-        Statistics.log("t=%4s [firms] n=%s,sumA=%.2f,sumL=%.2f,sumK=%.2f,sumπ=%2.f" % ( Status.t,len(Status.firms), \
-                                                                   Status.firmsAsum,Status.firmsLsum,
-                                                                   Status.firmsKsum,Status.firmsπsum))
-        Statistics.log("       [bank]  avgRate=%.2f,D=%.2f,L=%.2f,E=%0.2f,B=%.2f,π=%.2f" % (BankSector.getAverageRate(), \
-                                                                   BankSector.D,BankSector.L,BankSector.E,
-                                                                   BankSector.B,BankSector.π))
+
+
+
+        Statistics.getStatistics()
+
         removeBankruptedFirms()
         newFirmsNumber = determineNentry()
         addFirms(newFirmsNumber)
@@ -234,7 +269,7 @@ def doSimulation(doDebug=False):
         updateFirms()
         updateBankSector()
 
-        if doDebug:
+        if doDebug and ( doDebug==t or doDebug==-1):
             set_trace()
 
 
@@ -290,7 +325,7 @@ parser.add_argument("--graph",action="store_true",help="Shows the graph")
 parser.add_argument("--sizeparam",type=int,help="Size parameter (default=%s)" % Config.Ñ)
 parser.add_argument("--savegraph",action="store_true",help="Save the graph")
 parser.add_argument("--log",action="store_true",help="Log to stdout")
-parser.add_argument("--debug",action="store_true",help="Do a debug session at each t")
+parser.add_argument("--debug",help="Do a debug session at t=X, default each t",type=int,const=-1,nargs='?')
 parser.add_argument("--save",type=str,help="Save the state (file will be overwritten)")
 parser.add_argument("--restore",type=str,help="Restore the state (and enters interactive mode)")
 
@@ -306,10 +341,9 @@ if args.log:
     
 if args.restore:
     try:
-        with open(args.restore, 'r') as file:
-            Config = pickle.load(file)
-            Status = pickle.dump(file)
-            Statistics = pickle.dump(file)
+        with open(args.restore, 'rb') as file:
+            Statistics.firms = pickle.load(file)
+            Statistics.bankSector = pickle.load(file)
     except Error:
         print("not possible to restore status from %s" % args.restore)
         sys.exit(0)
@@ -325,10 +359,9 @@ else:
         Statistics.log("[no failures]")
     if args.save:
         try:
-            with open(args.save,'w') as file:
-                pickle.dump(Config, file)
-                pickle.dump(Status,file)
-                pickle.dump(Statistics,file)
+            with open(args.save,'wb') as file:
+                pickle.dump(Statistics.firms, file)
+                pickle.dump(Statistics.bankSector,file)
         except Error:
             print("not possible to save status to %s" % args.save)
     else:
