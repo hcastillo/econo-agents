@@ -8,8 +8,12 @@ import math
 import matplotlib.pyplot as plt
 import argparse
 import sys,code,pickle
+import seaborn as sns
 from sklearn.linear_model import LinearRegression
 from pdb import set_trace
+
+random.seed(40579)
+
 
 class Config:
     T = 1000  # time (1000)
@@ -44,35 +48,47 @@ class Statistics:
     firms = []
     bankSector = []
 
-    def getStatistics(self):
+    bankrupcy = []
+    firmsK = []
+    firmsπ = []
+    firmsL = []
+    firmsB = []
 
-        bank={}
-        bank['L'] = BankSector.L
-        bank['D'] = BankSector.D
-        bank['avgrate'] = BankSector.getAverageRate()
-        bank['E'] = BankSector.E
-        bank['D'] = BankSector.D
-        bank['π'] = BankSector.π
-        firms=[]
-        for i in Status.firms:
-            firm={}
-            firm['K']=i.K
-            firm['r']=i.r
-            firm['L']=i.L
-            firm['π']=i.π
-            firm['u']=i.u
-            firms.append( firm )
+    def getStatistics():
+        global args
 
         Statistics.log("t=%4s [firms] n=%s,sumA=%.2f,sumL=%.2f,sumK=%.2f,sumπ=%2.f" % ( Status.t,len(Status.firms), \
                                                                    Status.firmsAsum,Status.firmsLsum,
                                                                    Status.firmsKsum,Status.firmsπsum))
-        Statistics.log("       [bank]  avgRate=%.2f,D=%.2f,L=%.2f,E=%0.2f,B=%.2f,π=%.2f" % ( bank['avgrate'] , \
+        Statistics.log("       [bank]  avgRate=%.2f,D=%.2f,L=%.2f,E=%0.2f,B=%.2f,π=%.2f" % ( BankSector.getAverageRate() , \
                                                                    BankSector.D,BankSector.L,BankSector.E,
                                                                    BankSector.B,BankSector.π))
-        Statistics.log( " r=%s " % Status.firms[0].r )
-        Statistics.firms.append(firms)
-        Statistics.bankSector.append( bank )
+        ##Statistics.log( " r=%s " % Status.firms[0].r )
 
+        Statistics.firmsK.append( Status.firmsKsum )
+        Statistics.firmsπ.append( Status.firmsπsum )
+        Statistics.firmsL.append( Status.firmsLsum )
+        Statistics.firmsB.append( BankSector.B )
+
+        if args.saveall:
+            bank = {}
+            bank['L'] = BankSector.L
+            bank['D'] = BankSector.D
+            bank['avgrate'] = BankSector.getAverageRate()
+            bank['E'] = BankSector.E
+            bank['D'] = BankSector.D
+            bank['π'] = BankSector.π
+            firms = []
+            for i in Status.firms:
+                firm = {}
+                firm['K'] = i.K
+                firm['r'] = i.r
+                firm['L'] = i.L
+                firm['π'] = i.π
+                firm['u'] = i.u
+                firms.append(firm)
+            Statistics.firms.append(firms)
+            Statistics.bankSector.append( bank )
 
 
 class Status:
@@ -89,7 +105,7 @@ class Status:
     firmsGrowRate = []
 
     firmIdMax = 0
-    def getNewFirmId(self):
+    def getNewFirmId():
         Status.firmIdMax += 1
         return Status.firmIdMax
 
@@ -129,7 +145,7 @@ class Firm():
         ## este es el negativo
         #Statistics.log( "(%s -%s * %s ) / (%s * %s  * %s * %s)   + %s / (2 * %s * %s)" %
         #                  (Config.φ ,Config.g, self.r, Config.c, Config.φ, Config.g,  self.r, self.A , Config.g , self.r))
-        return ( Config.φ - Config.g * self.r ) / Config.c * Config.φ  * Config.g * self.r + (self.A / (2 * Config.g * self.r))
+        return ( Config.φ - Config.g * self.r ) / (Config.c * Config.φ  * Config.g * self.r) + (self.A / (2 * Config.g * self.r))
 
 
     def determineU(self):
@@ -151,11 +167,11 @@ class BankSector():
     D = 0
     π = 0
 
-    def determineDeposits(self):
+    def determineDeposits():
         #as a residual from L = E+D, ergo D=L-E
         return BankSector.L - BankSector.E
 
-    def determineProfit(self):
+    def determineProfit():
         # equation 13
         profitDeposits = 0.0
         for firm in Status.firms:
@@ -165,13 +181,13 @@ class BankSector():
         ###Statistics.log("        - bank profit= dep(%s) - %s , which  %s * [(1-w)*%s+%s]"%( profitDeposits  ,resto, BankSector.getAverageRate(), BankSector.D , BankSector.E ))
         return profitDeposits  - BankSector.getAverageRate() * ( (1-Config.ω)*BankSector.D + BankSector.E )
 
-    def getAverageRate(self):
+    def getAverageRate():
         average = 0.0
         for firm in Status.firms:
             average += firm.r
         return average / len(Status.firms)
 
-    def determineEquity(self):
+    def determineEquity():
         # equation 14
         result = BankSector.π + BankSector.E - BankSector.B
         # Statistics.log("  bank E %s =%s + %s - %s" % (result,BankSector.π , BankSector.E , BankSector.B))
@@ -180,18 +196,18 @@ class BankSector():
 
 def removeBankruptedFirms():
     i = 0
-
     BankSector.B  = 0.0
     for firm in Status.firms[:]:
         if (firm.π+firm.A) < 0:
             ##Statistics.log("quiebra %d %s %s" % (firm.id,firm.π,firm.A))
             # bankrupt: we sum Bn-1
-            #Statistics.log( "    %s %s %s %s" % (firm.π,firm.A,firm.L,firm.K))
-            BankSector.B += ( firm.L - firm.K )
+            ##Statistics.log( "    %s+%s<0 y  %s-%s=%s" % (firm.π,firm.A,firm.L,firm.K,(firm.L-firm.K)))
+            BankSector.B += ( firm.L - firm.K ) #**********************************
             Status.firms.remove( firm )
             Status.numFailuresGlobal += 1
             i += 1
     Statistics.log("        - removed %d firms %s" % ( i, "" if i==0 else " (next step B=%s)" % BankSector.B ))
+    Statistics.bankrupcy.append( i )
     return i
 
 def addFirms(Nentry):
@@ -257,11 +273,7 @@ def doSimulation(doDebug=False):
     BankSector.D = BankSector.L - BankSector.E
     for t in range(Config.T):
         Status.t = t
-
-
-
         Statistics.getStatistics()
-
         removeBankruptedFirms()
         newFirmsNumber = determineNentry()
         addFirms(newFirmsNumber)
@@ -273,51 +285,162 @@ def doSimulation(doDebug=False):
             set_trace()
 
 
-def zipf():
+def zipf_density(show=True):
     plt.clf()
-    zipf = {}  # log K = freq
+    zipf = {} # log K = freq
     for firm in Status.firms:
         if round(firm.K)>0:
-            x = math.log( round(firm.K))
+            x = math.log( round(firm.K) )
             if x in zipf:
                 zipf[x] += 1
             else:
                 zipf[x] = 1
+    x=[]
+    y=[]
+    for i in zipf:
+        x.append( i )
+        y.append( math.log(zipf[i]))
+    plt.plot(x, y, 'o', color="blue")
+    plt.ylabel("log freq")
+    plt.xlabel("log K")
+    plt.title("Zipf plot of firm sizes")
+    plt.show() if show else plt.savefig("zipf_rank.svg")
+
+
+def zipf_rank(show=True):
+    plt.clf()
+    y = []  # log K = freq
+    x = []
+    for firm in Status.firms:
+        if round(firm.K)>0:
+            y.append( math.log( firm.K ) )
+    y.sort(); y.reverse()
+    for i in range(len(y)):
+        x.append(float(i)/100)
+    plt.plot(x, y, 'o', color="blue" )
+    plt.ylabel("log K")
+    plt.xlabel("rank/100")
+    plt.title("Rank of K (zipf)")
+    plt.show() if show else plt.savefig("zipf_rank.svg")
+
+
+def aggregate_output(show=True):
+    plt.clf()
+    xx1 = []
+    yy = []
+    for i in range(150, Config.T):
+        yy.append(i)
+        xx1.append(math.log(Status.firmsKsums[i]))
+    plt.plot(yy, xx1, 'b-')
+    plt.ylabel("log K")
+    plt.xlabel("t")
+    plt.title("Logarithm of he aggregate output")
+    plt.show() if show else plt.savefig("aggregate_output.svg")
+
+
+def graph_profits(show=True):
+    plt.clf()
     xx = []
     yy = []
-    for x in zipf.keys():
-        xx.append(x)
-        yy.append(math.log(zipf[x]))
-    lr = LinearRegression()
-    lr.fit(np.array(xx).reshape(-1, 1), np.array(yy))
-    plt.scatter(xx, yy, s=np.full(len(zipf.keys()), 2), c=np.full(len(zipf.keys()), +random.uniform(0.3, 0.8)),
-                alpha=0.5)
-    plt.plot(lr.predict(np.array(xx[0:5]).reshape(-1, 1)), np.array(xx[0:5]), color="red")
-    plt.savefig('zipf_k_freq.svg')
+    for i in range(150, Config.T):
+            xx.append(i)
+            yy.append( Statistics.firmsπ[i]  )
+    plt.plot(xx, yy, 'b-')
+    plt.ylabel("total profits")
+    plt.xlabel("t")
+    plt.title("profits of companies")
+    plt.show() if show else plt.savefig("profits.svg")
 
-def show_graph(show):
-    global xx,yy,zipf
-    xx1 = []
+
+def graph_bankrupcies(show=True):
+    plt.clf()
+    xx = []
+    yy = []
+    for i in range(150, Config.T):
+            xx.append(i)
+            yy.append( Statistics.bankrupcy[i] )
+    plt.plot(xx, yy, 'b-')
+    plt.ylabel("num of bankrupcies")
+    plt.xlabel("t")
+    plt.title("Bankrupted firms")
+    plt.show() if show else plt.savefig("bankrupted.svg")
+
+
+def graph_baddebt(show=True):
+    plt.clf()
+    xx = []
+    yy = []
+    for i in range(150, Config.T):
+        if Statistics.firmsB[i]<0:
+            xx.append(i)
+            yy.append( math.log( -Statistics.firmsB[i]) )
+        else:
+            print("%d %s"%  (i,Statistics.firmsB[i]))
+    plt.plot(xx, yy, 'b-')
+    plt.ylabel("ln B")
+    plt.xlabel("t")
+    plt.title("Bad debt")
+    plt.show() if show else plt.savefig("bad_debt.svg")
+
+
+
+def growth_rate(show):
+    plt.clf()
     xx2 = []
     yy = []
-    for i in range(150,Config.T):
-        yy.append(i)
-        xx1.append(Status.firmsKsums[i])
-        xx2.append(Status.firmsGrowRate[i])
-    plt.plot( yy, xx1, 'b-' )
-    plt.ylabel("aggregate output(K)")
-    plt.xlabel("time")
-    plt.savefig("aggregate_output.svg" )
-    plt.clf()
-    plt.plot( yy, xx2, 'b-' )
-    plt.ylabel("grow rates of agg output")
-    plt.xlabel("time")
-    plt.savefig("growrate_agg_output.svg" )
-    plt.clf()
+    for i in range(150, Config.T):
+        if Status.firmsGrowRate[i]!=0:
+            yy.append(i)
+            xx2.append( Status.firmsGrowRate[i]  )
+    plt.plot(yy, xx2, 'b-')
+    plt.ylabel("growth")
+    plt.xlabel("t")
+    plt.title("Growth rates of agg output")
+    plt.show() if show else plt.savefig("growth_rates.svg")
 
-    if show:
-        plt.show()
+def show_graph(show):
+    aggregate_output(show)
+    growth_rate(show)
+    zipf_rank(show)
+    zipf_density(show)
+    graph_profits(show)
+    graph_bankrupcies(show)
 
+
+def save(filename,all=False):
+    try:
+        with open(filename, 'wb') as file:
+            if all:
+                pickle.dump(Statistics.firms, file)
+                pickle.dump(Statistics.bankSector, file)
+            else:
+                pickle.dump( Statistics.firmsK,file )
+                pickle.dump( Statistics.firmsπ,file )
+                pickle.dump( Statistics.firmsL,file )
+                pickle.dump( Statistics.firmsB,file )
+    except Error:
+        print("not possible to save %s to %s" %  ("all" if all else "status", filename) )
+
+
+def restore(filename,all=False):
+    try:
+        with open(filename, 'rb') as file:
+            if all:
+                Statistics.firms = pickle.load(file)
+                Statistics.bankSector = pickle.load(file)
+            else:
+                Statistics.firmsK = pickle.load( file )
+                Statistics.firmsπ = pickle.load( file )
+                Statistics.firmsL = pickle.load( file )
+                Statistics.firmsB = pickle.load( file )
+    except Error:
+        print("not possible to restore %s from %s" % ("all" if all else "status", filename))
+        sys.exit(0)
+    set_trace()
+    #try:
+    #    code.interact(local=locals())
+    #except SystemExit:
+    #    pass
 
 
 parser = argparse.ArgumentParser(description="Fluctuations firms/banks")
@@ -326,6 +449,8 @@ parser.add_argument("--sizeparam",type=int,help="Size parameter (default=%s)" % 
 parser.add_argument("--savegraph",action="store_true",help="Save the graph")
 parser.add_argument("--log",action="store_true",help="Log to stdout")
 parser.add_argument("--debug",help="Do a debug session at t=X, default each t",type=int,const=-1,nargs='?')
+parser.add_argument("--saveall",type=str,help="Save all firms data (big file: file will be overwritten)")
+parser.add_argument("--restoreall",type=str,help="Restore all firms data (big file: and enters interactive mode)")
 parser.add_argument("--save",type=str,help="Save the state (file will be overwritten)")
 parser.add_argument("--restore",type=str,help="Restore the state (and enters interactive mode)")
 
@@ -339,18 +464,11 @@ if args.sizeparam:
 if args.log:
     Statistics.doLog = True
     
-if args.restore:
-    try:
-        with open(args.restore, 'rb') as file:
-            Statistics.firms = pickle.load(file)
-            Statistics.bankSector = pickle.load(file)
-    except Error:
-        print("not possible to restore status from %s" % args.restore)
-        sys.exit(0)
-    try:
-        code.interact(local=locals())
-    except SystemExit:
-        pass
+if args.restoreall or args.restore:
+    if args.restoreall:
+        restore(args.restoreall, True)
+    else:
+        restore(args.restore, False)
 else:
     doSimulation(args.debug)
     if Status.numFailuresGlobal>0:
@@ -358,14 +476,10 @@ else:
     else:
         Statistics.log("[no failures]")
     if args.save:
-        try:
-            with open(args.save,'wb') as file:
-                pickle.dump(Statistics.firms, file)
-                pickle.dump(Statistics.bankSector,file)
-        except Error:
-            print("not possible to save status to %s" % args.save)
-    else:
-        if args.graph:
-            show_graph(True)
-        if args.savegraph:
-            show_graph(False)
+        save( args.save, False )
+    if args.saveall:
+        save( args.saveall, True )
+    if args.graph:
+        show_graph(True)
+    if args.savegraph:
+        show_graph(False)
