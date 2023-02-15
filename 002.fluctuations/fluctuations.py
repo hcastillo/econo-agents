@@ -418,6 +418,10 @@ def save(filename,all=False):
                 pickle.dump( Statistics.firmsπ,file )
                 pickle.dump( Statistics.firmsL,file )
                 pickle.dump( Statistics.firmsB,file )
+                pickle.dump( Status.firms, file )
+                pickle.dump( Statistics.bankrupcy, file )
+                pickle.dump( Status.firmsKsums, file )
+                pickle.dump( Status.firmsGrowRate, file )
     except Error:
         print("not possible to save %s to %s" %  ("all" if all else "status", filename) )
 
@@ -429,10 +433,14 @@ def restore(filename,all=False):
                 Statistics.firms = pickle.load(file)
                 Statistics.bankSector = pickle.load(file)
             else:
-                Statistics.firmsK = pickle.load( file )
-                Statistics.firmsπ = pickle.load( file )
-                Statistics.firmsL = pickle.load( file )
-                Statistics.firmsB = pickle.load( file )
+                Statistics.firmsK   = pickle.load( file )
+                Statistics.firmsπ   = pickle.load( file )
+                Statistics.firmsL   = pickle.load( file )
+                Statistics.firmsB   = pickle.load( file )
+                Status.firms        = pickle.load( file )
+                Statistics.bankrupcy= pickle.load( file )
+                Status.firmsKsums   = pickle.load( file )
+                Status.firmsGrowRate= pickle.load( file )
     except Error:
         print("not possible to restore %s from %s" % ("all" if all else "status", filename))
         sys.exit(0)
