@@ -24,7 +24,7 @@ class Config:
     c = 1     # parameter bankruptcy cost equation
     α = 0.08  # alpha, ratio equity-loan
     g = 1.1   # variable cost
-    ω = 0.002 # markdonw interest rate ( the higher it is, the monopolistic power of banks)
+    ω = 0.002 # markdown interest rate (the higher it is, the monopolistic power of banks)
     λ = 0.3   # credit assets rate
     d = 100   # location cost
     e = 0.1   # sensivity
@@ -32,7 +32,7 @@ class Config:
     # firms initial parameters
     K_i0 = 100   # capital
     A_i0 = 20    # asset
-    L_i0 = 80    # liability (pasivo empresas : sus créditos)
+    L_i0 = 80    # liability
     π_i0 = 0     # profit
     B_i0 = 0     # bad debt
 
@@ -53,6 +53,7 @@ class Statistics:
     firmsπ = []
     firmsL = []
     firmsB = []
+    rate   = []
 
     def getStatistics():
         global args
@@ -69,6 +70,7 @@ class Statistics:
         Statistics.firmsπ.append( Status.firmsπsum )
         Statistics.firmsL.append( Status.firmsLsum )
         Statistics.firmsB.append( BankSector.B )
+        Statistics.rate.append( BankSector.getAverageRate() )
 
         if args.saveall:
             bank = {}
@@ -285,7 +287,8 @@ def doSimulation(doDebug=False):
             set_trace()
 
 
-def zipf_density(show=True):
+def graph_zipf_density(show=True):
+    Statistics.log("zipf_density")
     plt.clf()
     zipf = {} # log K = freq
     for firm in Status.firms:
@@ -303,11 +306,35 @@ def zipf_density(show=True):
     plt.plot(x, y, 'o', color="blue")
     plt.ylabel("log freq")
     plt.xlabel("log K")
-    plt.title("Zipf plot of firm sizes")
-    plt.show() if show else plt.savefig("zipf_rank.svg")
+    plt.title("Zipf plot of firm sizes" )
+    plt.show() if show else plt.savefig("zipf_density.svg")
+
+def graph_zipf_density1(show=True):
+    Statistics.log("zipf_density")
+    plt.clf()
+    zipf = {} # log K = freq
+    for firm in Status.firms:
+        if round(firm.K)>0:
+            x = math.log( round(firm.K) )
+            if x in zipf:
+                zipf[x] += 1
+            else:
+                zipf[x] = 1
+    x=[]
+    y=[]
+    for i in zipf:
+        if math.log( zipf[i]) >= 1:
+            x.append( i )
+            y.append( math.log(zipf[i]))
+    plt.plot(x, y, 'o', color="blue")
+    plt.ylabel("log freq")
+    plt.xlabel("log K")
+    plt.title("Zipf plot of firm sizes (modified)")
+    plt.show() if show else plt.savefig("zipf_density1.svg" )
 
 
-def zipf_rank(show=True):
+def graph_zipf_rank(show=True):
+    Statistics.log("zipf_rank")
     plt.clf()
     y = []  # log K = freq
     x = []
@@ -316,15 +343,16 @@ def zipf_rank(show=True):
             y.append( math.log( firm.K ) )
     y.sort(); y.reverse()
     for i in range(len(y)):
-        x.append(float(i)/100)
-    plt.plot(x, y, 'o', color="blue" )
-    plt.ylabel("log K")
-    plt.xlabel("rank/100")
-    plt.title("Rank of K (zipf)")
+        x.append(math.log(float(i+1)))
+    plt.plot( y,x, 'o', color="blue" )
+    plt.xlabel("log K")
+    plt.ylabel("log rank")
+    plt.title("Rank of K (zipf)" )
     plt.show() if show else plt.savefig("zipf_rank.svg")
 
 
-def aggregate_output(show=True):
+def graph_aggregate_output(show=True):
+    Statistics.log("aggregate_output")
     plt.clf()
     xx1 = []
     yy = []
@@ -334,25 +362,40 @@ def aggregate_output(show=True):
     plt.plot(yy, xx1, 'b-')
     plt.ylabel("log K")
     plt.xlabel("t")
-    plt.title("Logarithm of he aggregate output")
+    plt.title("Logarithm of aggregate output" )
     plt.show() if show else plt.savefig("aggregate_output.svg")
 
 
 def graph_profits(show=True):
+    Statistics.log("profits")
     plt.clf()
     xx = []
     yy = []
     for i in range(150, Config.T):
             xx.append(i)
-            yy.append( Statistics.firmsπ[i]  )
+            yy.append( Statistics.firmsπ[i] / Config.N  )
     plt.plot(xx, yy, 'b-')
-    plt.ylabel("total profits")
+    plt.ylabel("avg profits")
     plt.xlabel("t")
-    plt.title("profits of companies")
+    plt.title("profits of companies" )
     plt.show() if show else plt.savefig("profits.svg")
 
+def graph_baddebt(show=True):
+    Statistics.log("bad_debt")
+    plt.clf()
+    xx = []
+    yy = []
+    for i in range(150, Config.T):
+            xx.append( i )
+            yy.append( -Statistics.firmsB[i]/Config.N  )
+    plt.plot(xx, yy, 'b-')
+    plt.ylabel("avg bad debt")
+    plt.xlabel("t")
+    plt.title("Bad debt" )
+    plt.show() if show else plt.savefig("bad_debt_avg.svg")
 
 def graph_bankrupcies(show=True):
+    Statistics.log("bankrupcies")
     plt.clf()
     xx = []
     yy = []
@@ -366,7 +409,8 @@ def graph_bankrupcies(show=True):
     plt.show() if show else plt.savefig("bankrupted.svg")
 
 
-def graph_baddebt(show=True):
+def graph_bad_debt(show=True):
+    Statistics.log("bad_debt")
     plt.clf()
     xx = []
     yy = []
@@ -379,12 +423,27 @@ def graph_baddebt(show=True):
     plt.plot(xx, yy, 'b-')
     plt.ylabel("ln B")
     plt.xlabel("t")
-    plt.title("Bad debt")
-    plt.show() if show else plt.savefig("bad_debt.svg")
+    plt.title("Bad debt" )
+    plt.show() if show else plt.savefig("bad_debt.svg" )
 
 
+def graph_interest_rate(show):
+    Statistics.log("interest_rate")
+    plt.clf()
+    xx2 = []
+    yy = []
+    for i in range(150, Config.T):
+        yy.append(i)
+        xx2.append( Statistics.rate[i]  )
+    plt.plot(yy, xx2, 'b-')
+    plt.ylabel("mean rate")
+    plt.xlabel("t")
+    plt.title("Mean interest rates of companies")
+    plt.show() if show else plt.savefig("interest_rate.svg")
 
-def growth_rate(show):
+
+def graph_growth_rate(show):
+    Statistics.log("growth_rate")
     plt.clf()
     xx2 = []
     yy = []
@@ -399,13 +458,16 @@ def growth_rate(show):
     plt.show() if show else plt.savefig("growth_rates.svg")
 
 def show_graph(show):
-    aggregate_output(show)
-    growth_rate(show)
-    zipf_rank(show)
-    zipf_density(show)
+    graph_aggregate_output(show)
+    graph_growth_rate(show)
+    graph_zipf_rank(show)
+    graph_zipf_density(show)
+    graph_zipf_density1(show)
     graph_profits(show)
+    graph_bad_debt(show)
+    graph_baddebt(show)
     graph_bankrupcies(show)
-
+    graph_interest_rate(show)
 
 def save(filename,all=False):
     try:
@@ -420,6 +482,7 @@ def save(filename,all=False):
                 pickle.dump( Statistics.firmsB,file )
                 pickle.dump( Status.firms, file )
                 pickle.dump( Statistics.bankrupcy, file )
+                pickle.dump( Statistics.rate, file )
                 pickle.dump( Status.firmsKsums, file )
                 pickle.dump( Status.firmsGrowRate, file )
     except Error:
@@ -427,6 +490,7 @@ def save(filename,all=False):
 
 
 def restore(filename,all=False):
+    global args
     try:
         with open(filename, 'rb') as file:
             if all:
@@ -439,12 +503,17 @@ def restore(filename,all=False):
                 Statistics.firmsB   = pickle.load( file )
                 Status.firms        = pickle.load( file )
                 Statistics.bankrupcy= pickle.load( file )
+                Statistics.rate     = pickle.load( file )
                 Status.firmsKsums   = pickle.load( file )
                 Status.firmsGrowRate= pickle.load( file )
     except Error:
         print("not possible to restore %s from %s" % ("all" if all else "status", filename))
         sys.exit(0)
-    set_trace()
+
+    if not args.savegraph and not args.graph:
+        set_trace()
+    else:
+        show_graph(args.graph)
     #try:
     #    code.interact(local=locals())
     #except SystemExit:
