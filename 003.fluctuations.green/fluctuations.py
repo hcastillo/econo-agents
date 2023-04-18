@@ -125,7 +125,9 @@ class Firm():
     L = Config.L_i0   # credit
     π = 0.0           # profit
     u = 0.0
-
+    Z = 0.0
+    σ = 0.0           # sigma
+    φ = 0.1           # initial capital productivity  fi
     def __init__(self):
         self.id = Status.getNewFirmId()
 
@@ -161,8 +163,12 @@ class Firm():
 
     def determineProfit(self):
         # equation 5
-        result =  ( self.u * Config.φ - Config.g * self.r ) * self.K
-        # Statistics.log("%s = %s * %s -  %s * %s / %s" % (result,self.u,Config.φ,Config.g,self.r,self.K))
+        result = ( self.u * Config.φ - Config.g * self.r ) * self.K
+        if result>0:
+            self.innovation = Config.σ*result
+            self.μ = self.innovation / self.K
+            self.Z = 1 -  math.exp( self.μ )
+            result -= (Config.σ*result)
         return result
 
 class BankSector():
@@ -217,7 +223,7 @@ def removeBankruptedFirms():
 def addFirms(Nentry):
     for i in range(Nentry):
         Status.firms.append( Firm() )
-    Statistics.log("        - add %d new firms (Nentry)" % Nentry)
+    Statistics.log("        - add %d new firms" % Nentry)
 
 
 def updateFirmsStatus():
@@ -260,7 +266,7 @@ def updateFirms():
         firm.φ = firm.φ * (1 - random.uniform(Config.δ1, Config.δ2))
         firm.y = firm.K * firm.φ
         Status.firmsφsum += firm.φ
-        Status.firmsYsum += firms.y
+        Status.firmsYsum += firm.y
     #Statistics.log("  K:%s L:%s pi:%s" % (totalK,totalL,Status.firmsπsum) )
     #code.interact(local=locals())
 
