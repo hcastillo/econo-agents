@@ -5,8 +5,7 @@ import random
 import math
 import matplotlib.pyplot as plt
 import argparse
-import sys,pickle
-from pdb import set_trace
+import sys
 
 random.seed(40579)
 
@@ -55,6 +54,8 @@ class Statistics:
     firmsπ = []
     firmsL = []
     firmsB = []
+    firmsY = []
+    firmsφ = []
     rate   = []
 
     def getStatistics():
@@ -71,6 +72,8 @@ class Statistics:
         Statistics.firmsK.append( Status.firmsKsum )
         Statistics.firmsπ.append( Status.firmsπsum )
         Statistics.firmsL.append( Status.firmsLsum )
+        Statistics.firmsY.append( Status.firmsYsum )
+        Statistics.firmsφ.append( Status.firmsφsum )
         Statistics.firmsB.append( BankSector.B )
         Statistics.rate.append( BankSector.getAverageRate() )
 
@@ -100,7 +103,9 @@ class Status:
     firmsKsum = 0.0
     firmsAsum = 0.0
     firmsLsum = 0.0
+    firmsYsum = 0.0
     firmsπsum = 0.0
+    firmsφsum = 0.0
     numFailuresGlobal = 0
     t = 0
 
@@ -360,8 +365,6 @@ def graph_bad_debt(show=True):
         if Statistics.firmsB[i]<0:
             xx.append(i)
             yy.append( math.log( -Statistics.firmsB[i]) )
-        else:
-            print("%d %s"%  (i,Statistics.firmsB[i]))
     plt.plot(xx, yy, 'b-')
     plt.ylabel("ln B")
     plt.xlabel("t")
@@ -408,11 +411,11 @@ def graph_y(show=True):
     yy = []
     for i in range(Config.T):
         xx.append(i)
-        yy.append( math.log( Statistics.firmsY[i]) )
+        yy.append( Statistics.firmsY[i] / Config.N )
     plt.plot(xx, yy, 'b-')
-    plt.ylabel("ln Y")
+    plt.ylabel("Y/N")
     plt.xlabel("t")
-    plt.title("Y" )
+    plt.title("Y/N" )
     plt.show() if show else plt.savefig("y.svg" )
 
 def graph_k(show=True):
@@ -436,7 +439,7 @@ def graph_φ(show=True):
     yy = []
     for i in range(Config.T):
         xx.append(i)
-        yy.append( Statistics.firmsφsum[i] / Config.N )
+        yy.append( Statistics.firmsφ[i] / Config.N )
     plt.plot(xx, yy, 'b-')
     plt.ylabel("Phi")
     plt.xlabel("t")
@@ -452,6 +455,7 @@ def show_graph(show):
     graph_bankrupcies(show)
 
 def save(filename,all=False):
+    import pickle
     try:
         with open(filename, 'wb') as file:
             if all:
@@ -473,6 +477,7 @@ def save(filename,all=False):
 
 def restore(filename,all=False):
     global args
+    import pickle
     try:
         with open(filename, 'rb') as file:
             if all:
