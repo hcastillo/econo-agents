@@ -10,11 +10,10 @@ from pdb import set_trace
 
 random.seed(40579)
 
-
 class Config:
-    T = 1000  # time (1000)
-    N = 10000 # number of firms
-    Ñ = 180   # size parameter
+    T = 100  # time (1000)
+    N = 1000 # number of firms
+    Ñ = 180  # size parameter
 
     φ = 0.1   # capital productivity (constant and uniform)
     c = 1     # parameter bankruptcy cost equation
@@ -34,6 +33,12 @@ class Config:
 
     # risk coefficient for bank sector (Basel)
     v    = 0.2
+
+
+    δ1 = 0.001 # delta
+    δ2 = 0.002
+    σ = 0.05 # 0.02-0.05 #sigma
+    thresold_green = 0.5
 
 #%%
 class Statistics:
@@ -233,6 +238,9 @@ def updateFirms():
     totalK =0.0
     totalL =0.0
     Status.firmsπsum = 0.0
+    Status.firmsφsum = 0.0
+    Status.firmsYsum = 0.0
+
     for firm in Status.firms:
         firm.L = firm.determineCredit()
         totalL += firm.L
@@ -248,6 +256,11 @@ def updateFirms():
         firm.π = firm.determineProfit()
         #Statistics.log("  firm%s  π=%0.2f A=%0.2f K=%0.2f L=%0.2f r=%0.2f" %( firm.id,firm.π,firm.A ,firm.K, firm.L, firm.r))
         Status.firmsπsum += firm.π
+
+        firm.φ = firm.φ * (1 - random.uniform(Config.δ1, Config.δ2))
+        firm.y = firm.K * firm.φ
+        Status.firmsφsum += firm.φ
+        Status.firmsYsum += firms.y
     #Statistics.log("  K:%s L:%s pi:%s" % (totalK,totalL,Status.firmsπsum) )
     #code.interact(local=locals())
 
@@ -283,77 +296,13 @@ def doSimulation(doDebug=False):
         if doDebug and ( doDebug==t or doDebug==-1):
             set_trace()
 
-
-def graph_zipf_density(show=True):
-    Statistics.log("zipf_density")
-    plt.clf()
-    zipf = {} # log K = freq
-    for firm in Status.firms:
-        if round(firm.K)>0:
-            x = math.log( round(firm.K) )
-            if x in zipf:
-                zipf[x] += 1
-            else:
-                zipf[x] = 1
-    x=[]
-    y=[]
-    for i in zipf:
-        x.append( i )
-        y.append( math.log(zipf[i]))
-    plt.plot(x, y, 'o', color="blue")
-    plt.ylabel("log freq")
-    plt.xlabel("log K")
-    plt.title("Zipf plot of firm sizes" )
-    plt.show() if show else plt.savefig("zipf_density.svg")
-
-def graph_zipf_density1(show=True):
-    Statistics.log("zipf_density")
-    plt.clf()
-    zipf = {} # log K = freq
-    for firm in Status.firms:
-        if round(firm.K)>0:
-            x = math.log( round(firm.K) )
-            if x in zipf:
-                zipf[x] += 1
-            else:
-                zipf[x] = 1
-    x=[]
-    y=[]
-    for i in zipf:
-        if math.log( zipf[i]) >= 1:
-            x.append( i )
-            y.append( math.log(zipf[i]))
-    plt.plot(x, y, 'o', color="blue")
-    plt.ylabel("log freq")
-    plt.xlabel("log K")
-    plt.title("Zipf plot of firm sizes (modified)")
-    plt.show() if show else plt.savefig("zipf_density1.svg" )
-
-
-def graph_zipf_rank(show=True):
-    Statistics.log("zipf_rank")
-    plt.clf()
-    y = []  # log K = freq
-    x = []
-    for firm in Status.firms:
-        if round(firm.K)>0:
-            y.append( math.log( firm.K ) )
-    y.sort(); y.reverse()
-    for i in range(len(y)):
-        x.append(math.log(float(i+1)))
-    plt.plot( y,x, 'o', color="blue" )
-    plt.xlabel("log K")
-    plt.ylabel("log rank")
-    plt.title("Rank of K (zipf)" )
-    plt.show() if show else plt.savefig("zipf_rank.svg")
-
-
 def graph_aggregate_output(show=True):
     Statistics.log("aggregate_output")
     plt.clf()
     xx1 = []
     yy = []
-    for i in range(150, Config.T):
+    rangemin = 150 if Config.T>150 else 0
+    for i in range(rangemin, Config.T):
         yy.append(i)
         xx1.append(math.log(Status.firmsKsums[i]))
     plt.plot(yy, xx1, 'b-')
@@ -368,7 +317,8 @@ def graph_profits(show=True):
     plt.clf()
     xx = []
     yy = []
-    for i in range(150, Config.T):
+    rangemin = 150 if Config.T>150 else 0
+    for i in range(rangemin, Config.T):
             xx.append(i)
             yy.append( Statistics.firmsπ[i] / Config.N  )
     plt.plot(xx, yy, 'b-')
@@ -377,26 +327,14 @@ def graph_profits(show=True):
     plt.title("profits of companies" )
     plt.show() if show else plt.savefig("profits.svg")
 
-def graph_baddebt(show=True):
-    Statistics.log("bad_debt")
-    plt.clf()
-    xx = []
-    yy = []
-    for i in range(150, Config.T):
-            xx.append( i )
-            yy.append( -Statistics.firmsB[i]/Config.N  )
-    plt.plot(xx, yy, 'b-')
-    plt.ylabel("avg bad debt")
-    plt.xlabel("t")
-    plt.title("Bad debt" )
-    plt.show() if show else plt.savefig("bad_debt_avg.svg")
 
 def graph_bankrupcies(show=True):
     Statistics.log("bankrupcies")
     plt.clf()
     xx = []
     yy = []
-    for i in range(150, Config.T):
+    rangemin = 150 if Config.T>150 else 0
+    for i in range(rangemin, Config.T):
             xx.append(i)
             yy.append( Statistics.bankrupcy[i] )
     plt.plot(xx, yy, 'b-')
@@ -411,7 +349,8 @@ def graph_bad_debt(show=True):
     plt.clf()
     xx = []
     yy = []
-    for i in range(150, Config.T):
+    rangemin = 150 if Config.T>150 else 0
+    for i in range(rangemin, Config.T):
         if Statistics.firmsB[i]<0:
             xx.append(i)
             yy.append( math.log( -Statistics.firmsB[i]) )
@@ -429,7 +368,8 @@ def graph_interest_rate(show):
     plt.clf()
     xx2 = []
     yy = []
-    for i in range(150, Config.T):
+    rangemin = 150 if Config.T>150 else 0
+    for i in range(rangemin, Config.T):
         yy.append(i)
         xx2.append( Statistics.rate[i]  )
     plt.plot(yy, xx2, 'b-')
@@ -444,7 +384,8 @@ def graph_growth_rate(show):
     plt.clf()
     xx2 = []
     yy = []
-    for i in range(150, Config.T):
+    rangemin = 150 if Config.T>150 else 0
+    for i in range(rangemin, Config.T):
         if Status.firmsGrowRate[i]!=0:
             yy.append(i)
             xx2.append( Status.firmsGrowRate[i]  )
@@ -454,17 +395,55 @@ def graph_growth_rate(show):
     plt.title("Growth rates of agg output")
     plt.show() if show else plt.savefig("growth_rates.svg")
 
+def graph_y(show=True):
+    Statistics.log("y")
+    plt.clf()
+    xx = []
+    yy = []
+    for i in range(Config.T):
+        xx.append(i)
+        yy.append( math.log( Statistics.firmsY[i]) )
+    plt.plot(xx, yy, 'b-')
+    plt.ylabel("ln Y")
+    plt.xlabel("t")
+    plt.title("Y" )
+    plt.show() if show else plt.savefig("y.svg" )
+
+def graph_k(show=True):
+    Statistics.log("k")
+    plt.clf()
+    xx = []
+    yy = []
+    for i in range(Config.T):
+        xx.append(i)
+        yy.append( math.log( Statistics.firmsK[i]) )
+    plt.plot(xx, yy, 'b-')
+    plt.ylabel("ln K")
+    plt.xlabel("t")
+    plt.title("K" )
+    plt.show() if show else plt.savefig("k.svg" )
+
+def graph_φ(show=True):
+    Statistics.log("y")
+    plt.clf()
+    xx = []
+    yy = []
+    for i in range(Config.T):
+        xx.append(i)
+        yy.append( Statistics.firmsφsum[i] / Config.N )
+    plt.plot(xx, yy, 'b-')
+    plt.ylabel("Phi")
+    plt.xlabel("t")
+    plt.title("Phi" )
+    plt.show() if show else plt.savefig("phi.svg" )
+
 def show_graph(show):
-    graph_aggregate_output(show)
-    graph_growth_rate(show)
-    graph_zipf_rank(show)
-    graph_zipf_density(show)
-    graph_zipf_density1(show)
     graph_profits(show)
+    graph_y(show)
+    graph_k(show)
+    graph_φ(show)
     graph_bad_debt(show)
-    graph_baddebt(show)
     graph_bankrupcies(show)
-    graph_interest_rate(show)
 
 def save(filename,all=False):
     try:
@@ -517,43 +496,58 @@ def restore(filename,all=False):
     #    pass
 
 
-parser = argparse.ArgumentParser(description="Fluctuations firms/banks")
-parser.add_argument("--graph",action="store_true",help="Shows the graph")
-parser.add_argument("--sizeparam",type=int,help="Size parameter (default=%s)" % Config.Ñ)
-parser.add_argument("--savegraph",action="store_true",help="Save the graph")
-parser.add_argument("--log",action="store_true",help="Log to stdout")
-parser.add_argument("--debug",help="Do a debug session at t=X, default each t",type=int,const=-1,nargs='?')
-parser.add_argument("--saveall",type=str,help="Save all firms data (big file: file will be overwritten)")
-parser.add_argument("--restoreall",type=str,help="Restore all firms data (big file: and enters interactive mode)")
-parser.add_argument("--save",type=str,help="Save the state (file will be overwritten)")
-parser.add_argument("--restore",type=str,help="Restore the state (and enters interactive mode)")
+def isNotebook():
+        try:
+            from IPython import get_ipython
+            if 'IPKernelApp' not in get_ipython().config:  # pragma: no cover
+                return False
+        except ImportError:
+            return False
+        except AttributeError:
+            return False
+        return True
 
-args = parser.parse_args()
-
-if args.sizeparam:
-    Config.Ñ = int(args.sizeparam)
-    if Config.Ñ<0 or Config.Ñ>Config.N:
-        print("value not valid for Ñ: must be 0..%s"%Config.N)
-
-if args.log:
-    Statistics.doLog = True
-    
-if args.restoreall or args.restore:
-    if args.restoreall:
-        restore(args.restoreall, True)
-    else:
-        restore(args.restore, False)
+if isNotebook():
+    doSimulation(False)
+    show_graph(True)
 else:
-    doSimulation(args.debug)
-    if Status.numFailuresGlobal>0:
-        Statistics.log("[total failures in all times = %s " % Status.numFailuresGlobal )
+    parser = argparse.ArgumentParser(description="Fluctuations firms/banks")
+    parser.add_argument("--graph", action="store_true", help="Shows the graph")
+    parser.add_argument("--sizeparam", type=int, help="Size parameter (default=%s)" % Config.Ñ)
+    parser.add_argument("--savegraph", action="store_true", help="Save the graph")
+    parser.add_argument("--log", action="store_true", help="Log to stdout")
+    parser.add_argument("--debug", help="Do a debug session at t=X, default each t", type=int, const=-1, nargs='?')
+    parser.add_argument("--saveall", type=str, help="Save all firms data (big file: file will be overwritten)")
+    parser.add_argument("--restoreall", type=str, help="Restore all firms data (big file: and enters interactive mode)")
+    parser.add_argument("--save", type=str, help="Save the state (file will be overwritten)")
+    parser.add_argument("--restore", type=str, help="Restore the state (and enters interactive mode)")
+    args = parser.parse_args()
+
+    if args.sizeparam:
+        Config.Ñ = int(args.sizeparam)
+        if Config.Ñ < 0 or Config.Ñ > Config.N:
+            print("value not valid for Ñ: must be 0..%s" % Config.N)
+
+    if args.log:
+        Statistics.doLog = True
+
+    if args.restoreall or args.restore:
+        if args.restoreall:
+            restore(args.restoreall, True)
+        else:
+            restore(args.restore, False)
     else:
-        Statistics.log("[no failures]")
-    if args.save:
-        save( args.save, False )
-    if args.saveall:
-        save( args.saveall, True )
-    if args.graph:
-        show_graph(True)
-    if args.savegraph:
-        show_graph(False)
+        doSimulation(args.debug)
+        if Status.numFailuresGlobal > 0:
+            Statistics.log("[total failures in all times = %s " % Status.numFailuresGlobal)
+        else:
+            Statistics.log("[no failures]")
+        if args.save:
+            save(args.save, False)
+        if args.saveall:
+            save(args.saveall, True)
+        if args.graph:
+            show_graph(True)
+        if args.savegraph:
+            show_graph(False)
+
