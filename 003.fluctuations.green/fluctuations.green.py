@@ -425,7 +425,7 @@ def graph_y(show=True):
     yy = []
     for i in range(Config.T):
         xx.append(i)
-        yy.append( math.log( Status.firmsY[i]) )
+        yy.append( math.log( Statistics.firmsY[i]) )
     plt.plot(xx, yy, 'b-')
     plt.ylabel("ln Y")
     plt.xlabel("t")
