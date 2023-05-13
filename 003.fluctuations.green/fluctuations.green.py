@@ -12,10 +12,11 @@ import sys,code
 random.seed(40579)
 
 class Config:
-    T = 100  # time (1000)
+    T = 100  # time (1000)f
     N = 1000 # number of firms (10000)
     Ñ = 180   # size parameter
 
+    
     c = 1     # parameter bankruptcy cost equation
     α = 0.08  # alpha, ratio equity-loan
     g = 1.1   # variable cost
@@ -38,10 +39,11 @@ class Config:
     delta2 = 0.002    
     
     
-    sigma = 0.0 # 0.02-0.05
+    sigma = 0.01 # 0.02-0.05
+    beta = 2  # bernoulli 
     
     thresold_green = 0.5
-    
+
 
 # +
 class Statistics:
@@ -60,6 +62,9 @@ class Statistics:
     firmsB = []
     firmsY = []
     firmsφ = []
+    firmsz = []
+    firmsmu= []
+    newFirms=[]
     
     rate   = []
 
@@ -81,6 +86,14 @@ class Statistics:
         Statistics.firmsφ.append( Status.firmsφsum )
         Statistics.firmsB.append( BankSector.B )
         Statistics.rate.append( BankSector.getAverageRate() )
+        
+        mu = 0
+        zeta = []
+        for i in Status.firms:
+            mu += i.mu
+            zeta.append( i.zeta )
+        Statistics.firmsz.append( zeta )
+        Statistics.firmsmu.append( mu ) 
 
             
 class Status:
@@ -136,7 +149,7 @@ class Firm():
         result = Config.λ * BankSector.L * self.K / Status.firmsKsum + (1 - Config.λ) * BankSector.L * self.A / Status.firmsAsum
         ## Statistics.log( "a*%s*%s/%s+(1-a)*%s*%s/%s  L=%s" % (BankSector.L,self.K,Status.firmsKsum,BankSector.L,self.A,Status.firmsAsum,result))
         return result
-
+ 
     def determineInterestRate(self):
         # (equation 12)
         return (2 + self.A ) / (  2 * Config.c * Config.g * ( 1/ ( Config.c * self.φ ) + self.π + self.A  ) + \
@@ -164,10 +177,16 @@ class Firm():
         if result>0:
             self.innovation = Config.sigma*result            
             self.mu = self.innovation / self.K
-            self.zeta = 1 -  math.exp( self.mu )
-            result -= (Config.sigma*result)        
+            self.zeta = 1 -  math.exp( -Config.beta * self.mu )
+            
+        result -= (Config.sigma*result)        
         return result
-    
+    def determineφ(self):
+        if self.zeta>0.025:#el problema de darle un valor a zeta es que si tenemos que jugar con sigma, al cambiar sigma cambiaran los valores de z
+            self.φ = self.φ * (1 + random.uniform( Config.delta1, Config.delta2 ))
+        else: 
+            self.φ=self.φ
+            return self.φ
     
 class BankSector():
     E = Config.N * Config.L_i0 * Config.v
@@ -267,21 +286,18 @@ def updateFirms():
         #Statistics.log("  firm%s  π=%0.2f A=%0.2f K=%0.2f L=%0.2f r=%0.2f" %( firm.id,firm.π,firm.A ,firm.K, firm.L, firm.r))
         Status.firmsπsum += firm.π
         
-        # update productivity:
-        firm.φ = firm.φ * (1-random.uniform( Config.delta1, Config.delta2 ))
+    #firms that would try to become innnovators   
+    ##for firm in Status.firms:
+        ##if hasattr(firm, 'z') and firm.z > 0.025:
+    # update productivity:
+            ##firm.φ = firm.φ * (1 + random.uniform( Config.delta1, Config.delta2 ))
     
         
-    
-    # podemos determinar zetamax
-    Status.zetamax = 0.0
-    for firm in Status.firms:
-        if firm.zeta>Status.zetamax:
-            Status.zetamax = firm.zeta
             
     # calcular si son green / brown:
     for firm in Status.firms:
-        if firm.zeta>(1-Config.thresold_green)*Status.zetamax:
-            firm.green = True
+        if firm.φ>0.15:
+            firm.green = True 
     
 def determineNentry():
     # equation 15
@@ -305,9 +321,10 @@ def doSimulation():
     BankSector.D = BankSector.L - BankSector.E
     for t in range(Config.T):
         Status.t = t
-        Statistics.getStatistics()
         removeBankruptedFirms()
+        Statistics.getStatistics()
         newFirmsNumber = determineNentry()
+        Statistics.newFirms.append(newFirmsNumber)
         addFirms(newFirmsNumber)
         updateBankL()
         updateFirms()
@@ -447,7 +464,7 @@ def graph_k(show=True):
     plt.show() if show else plt.savefig("k.svg" )
 
 def graph_φ(show=True):
-    Statistics.log("y")
+    Statistics.log("")
     plt.clf()
     xx = []
     yy = []
@@ -459,6 +476,52 @@ def graph_φ(show=True):
     plt.xlabel("t")
     plt.title("Phi" )
     plt.show() if show else plt.savefig("phi.svg" )
+    
+    
+    
+def graph_zeta(show=True):
+    Statistics.log("zeta")
+    plt.clf()
+    xx = []
+    yy = []
+    for i in range(Config.T):
+        xx.append(i)
+        yy.append( Statistics.firmsz[i] / Config.N )
+    plt.plot(xx, yy, 'b-')
+    plt.ylabel("Zeta")
+    plt.xlabel("t")
+    plt.title("Zeta" )
+    plt.show() if show else plt.savefig("zeta.svg" )
+    
+    
+def graph_mu(show=True):
+    Statistics.log("mu")
+    plt.clf()
+    xx = []
+    yy = []
+    for i in range(Config.T):
+        xx.append(i)
+        yy.append( Statistics.firmsmu[i] / Config.N  )
+    plt.plot(xx, yy, 'b-')
+    plt.ylabel("Mu")
+    plt.xlabel("t")
+    plt.title("Mu" )
+    plt.show() if show else plt.savefig("mu.svg" )
+
+    
+def graph_new_firms( show=True):
+    Statistics.log("new_firms_graph")
+    plt.clf()
+    xx = []
+    yy = []
+    for i in range(Config.T):
+        xx.append(i)
+        yy.append( Statistics.newFirms[i]) 
+    plt.plot(xx, yy, 'b-')
+    plt.ylabel("New firms")
+    plt.xlabel("t")
+    plt.title("New firms" )
+    plt.show() if show else plt.savefig("new_firms.svg" )
     
 def graph_zipf_density(show=True):
     Statistics.log("zipf_density")
@@ -512,14 +575,46 @@ def graph_growth_rate(show):
     plt.xlabel("t")
     plt.title("Growth rates of agg output")
     plt.show() if show else plt.savefig("growth_rates.svg")
+
+def graph_newentry(show=True):
+    Statistics.log("newentry")
+    plt.clf()
+    xx = []
+    yy = []
+    for i in range(Config.T):
+        xx.append(i)
+        yy.append(Statistics.newFirms[i])
+        addFirms(yy[-1])
+    plt.plot(xx, yy, 'b-')
+    plt.ylabel("New Entries")
+    plt.xlabel("t")
+    plt.title("New Entries")
+    plt.show() if show else plt.savefig("newentry.svg")
+
+def graph_bankrupcies(show=True):
+    Statistics.log("bankrupcies")
+    plt.clf()
+    xx = []
+    yy = []
+    for i in range(0, Config.T):
+            xx.append(i)
+            yy.append( Statistics.bankrupcy[i] )
+    plt.plot(xx, yy, 'b-')
+    plt.ylabel("num of bankrupcies")
+    plt.xlabel("t")
+    plt.title("Bankrupted firms")
+    plt.show() if show else plt.savefig("bankrupted.svg")
     
 def show_graph(show):
     graph_profits(show)
-    graph_y(show)
-    graph_k(show)
-    graph_φ(show)
-    graph_bankrupcies(show)
-
+    graph_mu(show)
+    graph_new_firms(show)
+    #graph_k(show)
+    #graph_y(show)
+    #graph_interest_rate(show)
+    #graph_growth_rate(show)
+    #graph_baddebt(show)
+    
 def isNotebook():
     try:
         from IPython import get_ipython
@@ -537,5 +632,45 @@ if not isNotebook():
 doSimulation()
 show_graph(isNotebook())
 
+
+
+# -
+
+show_graph(isNotebook())
+
+graph_y(True)
+
+total=0
+for i in Statistics.firmsz:
+    for j in i:
+        if j>0.001:
+            # print(j)
+            total+=1
+print(total)
+
+# +
+zetavalues = Statistics.firmsz
+
+# Create a line plot of the zeta values for all firms over time
+for i in range(len(zetavalues)):
+    plt.plot([i] * len(zetavalues[i]), zetavalues[i], 'b.', alpha=0.3)
+
+plt.title("Zeta Values for All Firms over Time")
+plt.xlabel("Time")
+plt.ylabel("Zeta Value")
+plt.show()
+# -
+
+graph_interest_rate(True)
+
+graph_φ(True)
+
+graph_baddebt(True)
+
+graph_k(True)
+
+graph_newentry(True)
+
+graph_bankrupcies(True)
 
 
