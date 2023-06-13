@@ -3520,3 +3520,492 @@ t= 879 [firms] n=20439,sumA=1445143.49,sumL=5630359.47,sumK=6971950.01,sumπ=899
         - add 133 new firms (Nentry)
 t= 880 [firms] n=20392,sumA=1280852.85,sumL=5605190.88,sumK=7142955.37,sumπ=-166849
        [bank]  avgRate=0.09,D=4470000.69,L=5595314.69,E=1125314.00,B=-150.74,π=6100.32
+        - removed 49 firms  (next step B=-43.87153193229118)
+        - add 127 new firms (Nentry)
+t= 881 [firms] n=20470,sumA=1248465.71,sumL=5637054.32,sumK=6753599.00,sumπ=-34867
+       [bank]  avgRate=0.09,D=4512760.53,L=5626570.00,E=1113809.46,B=-43.87,π=-11548.41
+        - removed 275 firms  (next step B=-409.08077752147796)
+        - add 136 new firms (Nentry)
+t= 882 [firms] n=20331,sumA=1379256.77,sumL=5579541.37,sumK=6795862.93,sumπ=128308
+       [bank]  avgRate=0.09,D=4473460.98,L=5569047.31,E=1095586.33,B=-409.08,π=-18632.21
+        - removed 419 firms  (next step B=-867.3033810109702)
+        - add 141 new firms (Nentry)
+t= 883 [firms] n=20053,sumA=1252444.48,sumL=5486594.03,sumK=6996986.34,sumπ=-129156
+       [bank]  avgRate=0.09,D=4381849.95,L=5477931.65,E=1096081.70,B=-867.30,π=-371.94
+        - removed 124 firms  (next step B=-146.6213953015383)
+        - add 132 new firms (Nentry)
+t= 884 [firms] n=20061,sumA=1299656.24,sumL=5491012.23,sumK=6616941.52,sumπ=44678
+       [bank]  avgRate=0.09,D=4395425.41,L=5480408.48,E=1084983.07,B=-146.62,π=-11245.25
+        - removed 276 firms  (next step B=-476.53841967331135)
+        - add 137 new firms (Nentry)
+t= 885 [firms] n=19922,sumA=1280826.06,sumL=5434842.86,sumK=6781920.71,sumπ=-21309
+       [bank]  avgRate=0.09,D=4346864.42,L=5424915.35,E=1078050.93,B=-476.54,π=-7408.68
+        - removed 242 firms  (next step B=-228.67289734381248)
+        - add 135 new firms (Nentry)
+t= 886 [firms] n=19815,sumA=1364751.01,sumL=5400721.51,sumK=6662941.19,sumπ=81354
+       [bank]  avgRate=0.09,D=4318801.51,L=5390254.65,E=1071453.14,B=-228.67,π=-6826.46
+        - removed 222 firms  (next step B=-255.54558537031824)
+        - add 135 new firms (Nentry)
+t= 887 [firms] n=19728,sumA=1278371.52,sumL=5367221.44,sumK=6816028.20,sumπ=-88943
+       [bank]  avgRate=0.09,D=4281995.90,L=5357265.71,E=1075269.80,B=-255.55,π=3561.12
+        - removed 56 firms  (next step B=-45.344102049271896)
+        - add 129 new firms (Nentry)
+t= 888 [firms] n=19801,sumA=1383761.23,sumL=5386695.40,sumK=6578704.12,sumπ=102866
+       [bank]  avgRate=0.09,D=4305738.25,L=5376349.02,E=1070610.78,B=-45.34,π=-4704.37
+        - removed 154 firms  (next step B=-218.99692390856526)
+        - add 133 new firms (Nentry)
+t= 889 [firms] n=19780,sumA=1454564.80,sumL=5362802.87,sumK=6852090.80,sumπ=68277
+       [bank]  avgRate=0.09,D=4276395.82,L=5353053.88,E=1076658.06,B=-219.00,π=5828.29
+        - removed 36 firms  (next step B=-15.928480620522443)
+        - add 128 new firms (Nentry)
+t= 890 [firms] n=19872,sumA=1395393.18,sumL=5392820.65,sumK=6918222.91,sumπ=-61708
+       [bank]  avgRate=0.09,D=4290767.00,L=5383290.32,E=1092523.31,B=-15.93,π=15849.32
+        - removed 0 firms 
+        - add 120 new firms (Nentry)
+t= 891 [firms] n=19992,sumA=1369010.82,sumL=5472035.91,sumK=6808121.08,sumπ=-28782
+       [bank]  avgRate=0.09,D=4361382.95,L=5462616.57,E=1101233.62,B=0.00,π=8710.31
+        - removed 2 firms  (next step B=-0.5035611429183693)
+        - add 124 new firms (Nentry)
+t= 892 [firms] n=20114,sumA=1496252.14,sumL=5516154.71,sumK=6858863.18,sumπ=124762
+       [bank]  avgRate=0.09,D=4403034.39,L=5506168.11,E=1103133.72,B=-0.50,π=1899.59
+        - removed 36 firms  (next step B=-25.737376554496777)
+        - add 129 new firms (Nentry)
+t= 893 [firms] n=20207,sumA=1616685.05,sumL=5525330.08,sumK=7148924.43,sumπ=117874
+       [bank]  avgRate=0.09,D=4397191.62,L=5515668.58,E=1118476.96,B=-25.74,π=15317.51
+        - removed 0 firms 
+        - add 122 new firms (Nentry)
+t= 894 [firms] n=20329,sumA=1367196.75,sumL=5601156.19,sumK=7338155.62,sumπ=-251928
+       [bank]  avgRate=0.10,D=4443817.35,L=5592384.82,E=1148567.48,B=0.00,π=30090.51
+        - removed 0 firms 
+        - add 112 new firms (Nentry)
+t= 895 [firms] n=20441,sumA=1378595.01,sumL=5752053.21,sumK=6869561.65,sumπ=9158
+       [bank]  avgRate=0.09,D=4593455.02,L=5742837.38,E=1149382.36,B=0.00,π=814.88
+        - removed 25 firms  (next step B=-55.659882311378766)
+        - add 129 new firms (Nentry)
+t= 896 [firms] n=20545,sumA=1585116.60,sumL=5757448.85,sumK=7147782.25,sumπ=203983
+       [bank]  avgRate=0.09,D=4604300.84,L=5746911.79,E=1142610.95,B=-55.66,π=-6827.07
+        - removed 209 firms  (next step B=-228.73315258792638)
+        - add 134 new firms (Nentry)
+t= 897 [firms] n=20470,sumA=1685390.81,sumL=5722307.61,sumK=7514089.40,sumπ=97737
+       [bank]  avgRate=0.09,D=4551159.54,L=5713054.75,E=1161895.22,B=-228.73,π=19055.53
+        - removed 3 firms  (next step B=-0.2822723351126405)
+        - add 121 new firms (Nentry)
+t= 898 [firms] n=20588,sumA=1654377.08,sumL=5818116.15,sumK=7603664.20,sumπ=-33433
+       [bank]  avgRate=0.10,D=4613855.42,L=5809476.08,E=1195620.65,B=-0.28,π=33725.15
+        - removed 0 firms 
+        - add 111 new firms (Nentry)
+t= 899 [firms] n=20699,sumA=1357469.21,sumL=5986336.73,sumK=7609501.25,sumπ=-299128
+       [bank]  avgRate=0.09,D=4754611.07,L=5978103.25,E=1223492.19,B=0.00,π=27871.54
+        - removed 0 firms 
+        - add 114 new firms (Nentry)
+t= 900 [firms] n=20813,sumA=1171946.94,sumL=6127402.75,sumK=7188024.09,sumπ=-187802
+       [bank]  avgRate=0.09,D=4908538.69,L=6117460.93,E=1208922.24,B=0.00,π=-14569.95
+        - removed 304 firms  (next step B=-351.1623008836955)
+        - add 136 new firms (Nentry)
+t= 901 [firms] n=20645,sumA=1073047.55,sumL=6056549.41,sumK=7043417.26,sumπ=-101411
+       [bank]  avgRate=0.08,D=4881921.52,L=6044611.19,E=1162689.66,B=-351.16,π=-46583.73
+        - removed 881 firms  (next step B=-1126.498863778405)
+        - add 151 new firms (Nentry)
+t= 902 [firms] n=19915,sumA=1074606.73,sumL=5824823.32,sumK=6799511.20,sumπ=-901
+       [bank]  avgRate=0.08,D=4704092.68,L=5813448.32,E=1109355.64,B=-1126.50,π=-54460.52
+        - removed 1008 firms  (next step B=-1430.4431695505132)
+        - add 156 new firms (Nentry)
+t= 903 [firms] n=19063,sumA=1214731.11,sumL=5556984.52,sumK=6633854.53,sumπ=137725
+       [bank]  avgRate=0.08,D=4480266.18,L=5546778.21,E=1066512.03,B=-1430.44,π=-44274.06
+        - removed 857 firms  (next step B=-1520.7132225436255)
+        - add 155 new firms (Nentry)
+t= 904 [firms] n=18361,sumA=1196276.60,sumL=5341215.96,sumK=6696809.14,sumπ=-20800
+       [bank]  avgRate=0.09,D=4281976.41,L=5332560.15,E=1050583.74,B=-1520.71,π=-17449.00
+        - removed 425 firms  (next step B=-575.9989246127365)
+        - add 144 new firms (Nentry)
+t= 905 [firms] n=18080,sumA=1292318.37,sumL=5263233.31,sumK=6441600.32,sumπ=93496
+       [bank]  avgRate=0.09,D=4214947.62,L=5252918.71,E=1037971.09,B=-576.00,π=-13188.65
+        - removed 334 firms  (next step B=-482.43893979516497)
+        - add 140 new firms (Nentry)
+t= 906 [firms] n=17886,sumA=1384105.95,sumL=5199624.75,sumK=6588244.72,sumπ=89260
+       [bank]  avgRate=0.09,D=4152261.24,L=5189855.46,E=1037594.22,B=-482.44,π=-859.31
+        - removed 125 firms  (next step B=-113.88716171106037)
+        - add 133 new firms (Nentry)
+t= 907 [firms] n=17894,sumA=1407413.21,sumL=5197609.96,sumK=6673636.71,sumπ=20742
+       [bank]  avgRate=0.09,D=4138910.77,L=5187971.09,E=1049060.32,B=-113.89,π=11352.21
+        - removed 6 firms  (next step B=-0.795333464156348)
+        - add 122 new firms (Nentry)
+t= 908 [firms] n=18010,sumA=1409400.20,sumL=5254526.48,sumK=6685121.40,sumπ=-450
+       [bank]  avgRate=0.09,D=4181783.97,L=5245301.58,E=1063517.61,B=-0.80,π=14456.50
+        - removed 0 firms 
+        - add 119 new firms (Nentry)
+t= 909 [firms] n=18129,sumA=1316152.62,sumL=5326713.47,sumK=6738044.10,sumπ=-95628
+       [bank]  avgRate=0.09,D=4241229.49,L=5317588.04,E=1076358.55,B=0.00,π=12840.94
+        - removed 0 firms 
+        - add 120 new firms (Nentry)
+t= 910 [firms] n=18249,sumA=1456048.12,sumL=5391537.70,sumK=6614462.75,sumπ=137496
+       [bank]  avgRate=0.09,D=4304400.17,L=5381792.74,E=1077392.57,B=0.00,π=1034.02
+        - removed 22 firms  (next step B=-7.298674622719966)
+        - add 129 new firms (Nentry)
+t= 911 [firms] n=18356,sumA=1461200.67,sumL=5396708.25,sumK=6992831.98,sumπ=2590
+       [bank]  avgRate=0.09,D=4296380.63,L=5386962.85,E=1090582.22,B=-7.30,π=13182.35
+        - removed 2 firms  (next step B=-0.0076494490893739275)
+        - add 122 new firms (Nentry)
+t= 912 [firms] n=18476,sumA=1407711.30,sumL=5462138.85,sumK=6928369.34,sumπ=-55929
+       [bank]  avgRate=0.09,D=4346562.44,L=5452911.09,E=1106348.65,B=-0.01,π=15766.42
+        - removed 0 firms 
+        - add 119 new firms (Nentry)
+t= 913 [firms] n=18595,sumA=1280214.48,sumL=5541140.31,sumK=6895302.28,sumπ=-129877
+       [bank]  avgRate=0.09,D=4417915.83,L=5531743.24,E=1113827.41,B=0.00,π=7478.76
+        - removed 1 firms  (next step B=-1.2386449156086483e-05)
+        - add 125 new firms (Nentry)
+t= 914 [firms] n=18719,sumA=1227220.63,sumL=5579778.58,sumK=6732616.23,sumπ=-55494
+       [bank]  avgRate=0.09,D=4465210.17,L=5569137.03,E=1103926.86,B=-0.00,π=-9900.54
+        - removed 191 firms  (next step B=-290.5126472585049)
+        - add 136 new firms (Nentry)
+t= 915 [firms] n=18664,sumA=1348256.40,sumL=5530527.23,sumK=6704976.39,sumπ=118492
+       [bank]  avgRate=0.09,D=4433289.79,L=5519634.32,E=1086344.52,B=-290.51,π=-17872.85
+        - removed 390 firms  (next step B=-566.6520071357359)
+        - add 142 new firms (Nentry)
+t= 916 [firms] n=18416,sumA=1230295.28,sumL=5441463.66,sumK=6911059.78,sumπ=-120489
+       [bank]  avgRate=0.09,D=4346999.04,L=5431722.61,E=1084723.57,B=-566.65,π=-2187.60
+        - removed 155 firms  (next step B=-264.1514300060986)
+        - add 133 new firms (Nentry)
+t= 917 [firms] n=18394,sumA=1140733.90,sumL=5434046.13,sumK=6546514.09,sumπ=-92057
+       [bank]  avgRate=0.09,D=4350330.32,L=5423617.85,E=1073287.53,B=-264.15,π=-11700.19
+        - removed 263 firms  (next step B=-360.9193284864125)
+        - add 138 new firms (Nentry)
+t= 918 [firms] n=18269,sumA=1286232.37,sumL=5377709.78,sumK=6429149.76,sumπ=142942
+       [bank]  avgRate=0.09,D=4316705.91,L=5366437.65,E=1049731.74,B=-360.92,π=-23916.71
+        - removed 429 firms  (next step B=-691.8087295450979)
+        - add 146 new firms (Nentry)
+t= 919 [firms] n=17986,sumA=1239013.20,sumL=5258403.61,sumK=6690509.95,sumπ=-49755
+       [bank]  avgRate=0.09,D=4202804.66,L=5248658.72,E=1045854.06,B=-691.81,π=-4569.50
+        - removed 219 firms  (next step B=-189.80724440844062)
+        - add 136 new firms (Nentry)
+t= 920 [firms] n=17903,sumA=1330767.41,sumL=5239809.32,sumK=6431790.47,sumπ=89159
+       [bank]  avgRate=0.09,D=4188633.24,L=5229270.28,E=1040637.04,B=-189.81,π=-5406.82
+        - removed 176 firms  (next step B=-292.12230087320097)
+        - add 135 new firms (Nentry)
+t= 921 [firms] n=17862,sumA=1249126.38,sumL=5212784.35,sumK=6635412.66,sumπ=-84140
+       [bank]  avgRate=0.09,D=4158355.64,L=5203185.22,E=1044829.59,B=-292.12,π=3900.42
+        - removed 32 firms  (next step B=-13.162670181980356)
+        - add 129 new firms (Nentry)
+t= 922 [firms] n=17959,sumA=1172359.56,sumL=5234654.46,sumK=6402221.40,sumπ=-79329
+       [bank]  avgRate=0.09,D=4182190.51,L=5224147.93,E=1041957.42,B=-13.16,π=-2885.33
+        - removed 116 firms  (next step B=-86.03060501089467)
+        - add 133 new firms (Nentry)
+t= 923 [firms] n=17976,sumA=1170314.07,sumL=5221021.99,sumK=6316712.85,sumπ=-4655
+       [bank]  avgRate=0.09,D=4181122.18,L=5209787.10,E=1028664.92,B=-86.03,π=-13378.53
+        - removed 284 firms  (next step B=-557.6842872022229)
+        - add 140 new firms (Nentry)
+t= 924 [firms] n=17832,sumA=1200319.13,sumL=5153296.88,sumK=6321761.14,sumπ=27564
+       [bank]  avgRate=0.09,D=4127228.23,L=5143324.62,E=1016096.39,B=-557.68,π=-13126.22
+        - removed 319 firms  (next step B=-720.415253406171)
+        - add 141 new firms (Nentry)
+t= 925 [firms] n=17654,sumA=1258437.36,sumL=5090135.64,sumK=6320844.47,sumπ=55674
+       [bank]  avgRate=0.09,D=4071322.33,L=5080481.95,E=1009159.62,B=-720.42,π=-7657.19
+        - removed 239 firms  (next step B=-371.5587792180689)
+        - add 138 new firms (Nentry)
+t= 926 [firms] n=17553,sumA=1297550.42,sumL=5055657.17,sumK=6372532.29,sumπ=36575
+       [bank]  avgRate=0.09,D=4035900.31,L=5045798.09,E=1009897.79,B=-371.56,π=366.61
+        - removed 93 firms  (next step B=-177.95460948398795)
+        - add 131 new firms (Nentry)
+t= 927 [firms] n=17591,sumA=1320264.33,sumL=5058959.87,sumK=6395706.48,sumπ=20244
+       [bank]  avgRate=0.09,D=4033611.99,L=5049488.93,E=1015876.94,B=-177.95,π=5801.20
+        - removed 12 firms  (next step B=-2.203710073346193)
+        - add 126 new firms (Nentry)
+t= 928 [firms] n=17705,sumA=1328493.84,sumL=5089156.56,sumK=6432184.73,sumπ=5713
+       [bank]  avgRate=0.09,D=4055358.91,L=5079384.72,E=1024025.81,B=-2.20,π=8146.67
+        - removed 3 firms  (next step B=-0.1904348434922699)
+        - add 124 new firms (Nentry)
+t= 929 [firms] n=17826,sumA=1198262.35,sumL=5129777.86,sumK=6466464.47,sumπ=-132711
+       [bank]  avgRate=0.09,D=4087783.52,L=5120129.07,E=1032345.55,B=-0.19,π=8319.54
+        - removed 0 firms 
+        - add 124 new firms (Nentry)
+t= 930 [firms] n=17950,sumA=1143110.42,sumL=5172175.27,sumK=6240206.74,sumπ=-57632
+       [bank]  avgRate=0.09,D=4135886.62,L=5161727.73,E=1025841.10,B=0.00,π=-6504.44
+        - removed 160 firms  (next step B=-146.75402322424225)
+        - add 135 new firms (Nentry)
+t= 931 [firms] n=17925,sumA=1236904.86,sumL=5140502.94,sumK=6228682.85,sumπ=91184
+       [bank]  avgRate=0.09,D=4118300.02,L=5129205.52,E=1010905.50,B=-146.75,π=-15082.36
+        - removed 298 firms  (next step B=-339.88104593867763)
+        - add 142 new firms (Nentry)
+t= 932 [firms] n=17769,sumA=1302039.35,sumL=5064955.79,sumK=6395889.87,sumπ=62502
+       [bank]  avgRate=0.09,D=4046750.24,L=5054527.49,E=1007777.25,B=-339.88,π=-3468.13
+        - removed 169 firms  (next step B=-245.5848877038635)
+        - add 135 new firms (Nentry)
+t= 933 [firms] n=17735,sumA=1251006.06,sumL=5048675.29,sumK=6415918.18,sumπ=-53595
+       [bank]  avgRate=0.09,D=4024855.93,L=5038886.26,E=1014030.33,B=-245.58,π=6007.49
+        - removed 16 firms  (next step B=-10.121886470141607)
+        - add 126 new firms (Nentry)
+t= 934 [firms] n=17845,sumA=1255185.91,sumL=5080203.66,sumK=6280134.34,sumπ=1676
+       [bank]  avgRate=0.09,D=4054497.23,L=5070151.66,E=1015654.42,B=-10.12,π=1613.97
+        - removed 40 firms  (next step B=-38.24690520568884)
+        - add 129 new firms (Nentry)
+t= 935 [firms] n=17934,sumA=1244082.28,sumL=5088461.27,sumK=6347903.34,sumπ=-13637
+       [bank]  avgRate=0.09,D=4062348.26,L=5078272.12,E=1015923.86,B=-38.25,π=231.19
+        - removed 69 firms  (next step B=-41.86470541296592)
+        - add 131 new firms (Nentry)
+t= 936 [firms] n=17996,sumA=1252637.33,sumL=5089971.39,sumK=6323036.97,sumπ=5988
+       [bank]  avgRate=0.09,D=4064442.33,L=5079619.29,E=1015176.96,B=-41.86,π=-788.76
+        - removed 87 firms  (next step B=-139.91298868024387)
+        - add 131 new firms (Nentry)
+t= 937 [firms] n=18040,sumA=1278900.76,sumL=5085939.35,sumK=6347184.93,sumπ=23743
+       [bank]  avgRate=0.09,D=4060736.19,L=5075884.79,E=1015148.60,B=-139.91,π=-168.27
+        - removed 76 firms  (next step B=-95.224083266112)
+        - add 131 new firms (Nentry)
+t= 938 [firms] n=18095,sumA=1295211.74,sumL=5085706.79,sumK=6390971.69,sumπ=13778
+       [bank]  avgRate=0.09,D=4057694.54,L=5075743.00,E=1018048.46,B=-95.22,π=2804.64
+        - removed 39 firms  (next step B=-18.192472767295264)
+        - add 129 new firms (Nentry)
+t= 939 [firms] n=18185,sumA=1265126.06,sumL=5100238.24,sumK=6411808.09,sumπ=-32631
+       [bank]  avgRate=0.09,D=4067311.71,L=5090242.31,E=1022930.60,B=-18.19,π=4863.95
+        - removed 12 firms  (next step B=-6.796551345389557)
+        - add 127 new firms (Nentry)
+t= 940 [firms] n=18300,sumA=1260247.70,sumL=5124807.25,sumK=6359842.87,sumπ=-7405
+       [bank]  avgRate=0.09,D=4090445.34,L=5114653.00,E=1024207.66,B=-6.80,π=1270.26
+        - removed 50 firms  (next step B=-20.731905973629697)
+        - add 129 new firms (Nentry)
+t= 941 [firms] n=18379,sumA=1294460.69,sumL=5131384.49,sumK=6386807.91,sumπ=31653
+       [bank]  avgRate=0.09,D=4097167.55,L=5121038.29,E=1023870.73,B=-20.73,π=-357.66
+        - removed 71 firms  (next step B=-43.821776882535346)
+        - add 131 new firms (Nentry)
+t= 942 [firms] n=18439,sumA=1340985.83,sumL=5129534.06,sumK=6458268.66,sumπ=43947
+       [bank]  avgRate=0.09,D=4092111.20,L=5119353.65,E=1027242.46,B=-43.82,π=3327.90
+        - removed 35 firms  (next step B=-24.18443908049381)
+        - add 128 new firms (Nentry)
+t= 943 [firms] n=18532,sumA=1311525.99,sumL=5146017.60,sumK=6533510.98,sumπ=-31998
+       [bank]  avgRate=0.09,D=4100312.00,L=5136212.28,E=1035900.28,B=-24.18,π=8633.64
+        - removed 4 firms  (next step B=-2.1528593477800966)
+        - add 124 new firms (Nentry)
+t= 944 [firms] n=18652,sumA=1267641.30,sumL=5189288.66,sumK=6471296.74,sumπ=-46361
+       [bank]  avgRate=0.09,D=4138230.13,L=5179501.40,E=1041271.27,B=-2.15,π=5368.84
+        - removed 7 firms  (next step B=-1.38070371904137)
+        - add 126 new firms (Nentry)
+t= 945 [firms] n=18771,sumA=1345716.24,sumL=5216628.10,sumK=6440428.12,sumπ=75558
+       [bank]  avgRate=0.09,D=4166292.74,L=5206356.37,E=1040063.63,B=-1.38,π=-1209.02
+        - removed 83 firms  (next step B=-147.89969991944014)
+        - add 131 new firms (Nentry)
+t= 946 [firms] n=18819,sumA=1310597.57,sumL=5210053.51,sumK=6633948.02,sumπ=-37638
+       [bank]  avgRate=0.09,D=4153931.66,L=5200318.16,E=1046386.51,B=-147.90,π=6174.97
+        - removed 25 firms  (next step B=-17.248006151588392)
+        - add 127 new firms (Nentry)
+t= 947 [firms] n=18921,sumA=1246279.43,sumL=5241863.27,sumK=6517363.45,sumπ=-66825
+       [bank]  avgRate=0.09,D=4181870.24,L=5231932.54,E=1050062.30,B=-17.25,π=3658.54
+        - removed 25 firms  (next step B=-11.93296645626492)
+        - add 128 new firms (Nentry)
+t= 948 [firms] n=19024,sumA=1278160.26,sumL=5260796.87,sumK=6442811.26,sumπ=29350
+       [bank]  avgRate=0.09,D=4205471.79,L=5250311.49,E=1044839.71,B=-11.93,π=-5234.53
+        - removed 147 firms  (next step B=-347.21929745048425)
+        - add 134 new firms (Nentry)
+t= 949 [firms] n=19011,sumA=1309273.64,sumL=5233775.78,sumK=6543967.54,sumπ=28683
+       [bank]  avgRate=0.09,D=4181687.27,L=5224198.53,E=1042511.26,B=-347.22,π=-2675.66
+        - removed 157 firms  (next step B=-156.41949986309655)
+        - add 133 new firms (Nentry)
+t= 950 [firms] n=18987,sumA=1253807.13,sumL=5222517.57,sumK=6563135.38,sumπ=-58007
+       [bank]  avgRate=0.09,D=4167785.58,L=5212556.32,E=1044770.74,B=-156.42,π=2103.05
+        - removed 44 firms  (next step B=-12.116325566759066)
+        - add 129 new firms (Nentry)
+t= 951 [firms] n=19072,sumA=1280654.71,sumL=5234400.83,sumK=6432780.65,sumπ=24278
+       [bank]  avgRate=0.09,D=4182523.33,L=5223853.69,E=1041330.36,B=-12.12,π=-3452.49
+        - removed 105 firms  (next step B=-118.39826390738952)
+        - add 133 new firms (Nentry)
+t= 952 [firms] n=19100,sumA=1301205.15,sumL=5216971.73,sumK=6524565.53,sumπ=17980
+       [bank]  avgRate=0.09,D=4166709.22,L=5206651.80,E=1039942.58,B=-118.40,π=-1506.18
+        - removed 116 firms  (next step B=-108.26623068962925)
+        - add 132 new firms (Nentry)
+t= 953 [firms] n=19116,sumA=1325547.13,sumL=5209806.47,sumK=6531632.25,sumπ=21786
+       [bank]  avgRate=0.09,D=4157876.60,L=5199712.91,E=1041836.31,B=-108.27,π=1785.46
+        - removed 66 firms  (next step B=-97.50819118500493)
+        - add 129 new firms (Nentry)
+t= 954 [firms] n=19179,sumA=1328270.03,sumL=5219010.99,sumK=6568925.09,sumπ=211
+       [bank]  avgRate=0.09,D=4162512.63,L=5209181.55,E=1046668.92,B=-97.51,π=4735.10
+        - removed 26 firms  (next step B=-3.990173115914802)
+        - add 127 new firms (Nentry)
+t= 955 [firms] n=19280,sumA=1319081.82,sumL=5243288.58,sumK=6574309.69,sumπ=-11710
+       [bank]  avgRate=0.09,D=4181733.18,L=5233344.58,E=1051611.41,B=-3.99,π=4938.50
+        - removed 18 firms  (next step B=-3.0776654933778755)
+        - add 127 new firms (Nentry)
+t= 956 [firms] n=19389,sumA=1315659.51,sumL=5268162.66,sumK=6578074.84,sumπ=-5957
+       [bank]  avgRate=0.09,D=4203249.21,L=5258057.03,E=1054807.82,B=-3.08,π=3193.33
+        - removed 39 firms  (next step B=-24.18032347079038)
+        - add 128 new firms (Nentry)
+t= 957 [firms] n=19478,sumA=1375357.45,sumL=5284109.64,sumK=6596372.56,sumπ=57174
+       [bank]  avgRate=0.09,D=4217312.01,L=5274039.09,E=1056727.09,B=-24.18,π=1895.09
+        - removed 46 firms  (next step B=-33.04784605543543)
+        - add 129 new firms (Nentry)
+t= 958 [firms] n=19561,sumA=1384059.71,sumL=5293506.54,sumK=6728618.54,sumπ=6155
+       [bank]  avgRate=0.09,D=4218697.88,L=5283635.43,E=1064937.55,B=-33.05,π=8177.42
+        - removed 15 firms  (next step B=-5.436742194935089)
+        - add 125 new firms (Nentry)
+t= 959 [firms] n=19671,sumA=1325832.20,sumL=5334325.41,sumK=6727039.79,sumπ=-60715
+       [bank]  avgRate=0.09,D=4250240.30,L=5324687.76,E=1074447.45,B=-5.44,π=9504.47
+        - removed 1 firms  (next step B=-0.011966774226931154)
+        - add 124 new firms (Nentry)
+t= 960 [firms] n=19794,sumA=1296080.32,sumL=5382241.67,sumK=6649838.56,sumπ=-32232
+       [bank]  avgRate=0.09,D=4296369.50,L=5372237.26,E=1075867.76,B=-0.01,π=1420.30
+        - removed 32 firms  (next step B=-18.98338204479542)
+        - add 129 new firms (Nentry)
+t= 961 [firms] n=19891,sumA=1389409.03,sumL=5389847.20,sumK=6656275.89,sumπ=90771
+       [bank]  avgRate=0.09,D=4307606.27,L=5379338.82,E=1071732.55,B=-18.98,π=-4154.19
+        - removed 131 firms  (next step B=-77.43947980483011)
+        - add 133 new firms (Nentry)
+t= 962 [firms] n=19893,sumA=1384185.28,sumL=5368774.31,sumK=6851614.82,sumπ=-7830
+       [bank]  avgRate=0.09,D=4280186.17,L=5358662.77,E=1078476.60,B=-77.44,π=6666.61
+        - removed 32 firms  (next step B=-15.370993324339276)
+        - add 127 new firms (Nentry)
+t= 963 [firms] n=19988,sumA=1311093.83,sumL=5402190.91,sumK=6781086.58,sumπ=-75609
+       [bank]  avgRate=0.09,D=4306224.86,L=5392383.00,E=1086158.13,B=-15.37,π=7666.16
+        - removed 7 firms  (next step B=-0.7990034206113014)
+        - add 125 new firms (Nentry)
+t= 964 [firms] n=20106,sumA=1302453.95,sumL=5441028.63,sumK=6679013.80,sumπ=-11137
+       [bank]  avgRate=0.09,D=4347095.32,L=5430790.67,E=1083695.35,B=-0.80,π=-2463.58
+        - removed 109 firms  (next step B=-106.5051509977312)
+        - add 131 new firms (Nentry)
+t= 965 [firms] n=20128,sumA=1340409.40,sumL=5428817.16,sumK=6722754.56,sumπ=35423
+       [bank]  avgRate=0.09,D=4339977.51,L=5418476.76,E=1078499.25,B=-106.51,π=-5302.61
+        - removed 172 firms  (next step B=-158.59207253892652)
+        - add 134 new firms (Nentry)
+t= 966 [firms] n=20090,sumA=1408635.90,sumL=5402767.32,sumK=6781281.61,sumπ=65640
+       [bank]  avgRate=0.09,D=4313879.32,L=5392496.24,E=1078616.92,B=-158.59,π=-40.92
+        - removed 104 firms  (next step B=-92.84354781597689)
+        - add 131 new firms (Nentry)
+t= 967 [firms] n=20117,sumA=1413580.53,sumL=5402808.52,sumK=6879705.48,sumπ=2407
+       [bank]  avgRate=0.09,D=4305506.87,L=5393084.59,E=1087577.72,B=-92.84,π=8867.96
+        - removed 12 firms  (next step B=-8.528716403694991)
+        - add 125 new firms (Nentry)
+t= 968 [firms] n=20230,sumA=1305011.37,sumL=5447492.97,sumK=6865980.31,sumπ=-111051
+       [bank]  avgRate=0.09,D=4340316.94,L=5437888.60,E=1097571.66,B=-8.53,π=9985.41
+        - removed 2 firms  (next step B=-0.0047529639406543)
+        - add 124 new firms (Nentry)
+t= 969 [firms] n=20352,sumA=1333667.51,sumL=5498131.81,sumK=6694572.04,sumπ=26176
+       [bank]  avgRate=0.09,D=4394686.41,L=5487858.30,E=1093171.89,B=-0.00,π=-4399.77
+        - removed 142 firms  (next step B=-177.5394459087213)
+        - add 132 new firms (Nentry)
+t= 970 [firms] n=20342,sumA=1295752.79,sumL=5476009.55,sumK=6838494.26,sumπ=-40433
+       [bank]  avgRate=0.09,D=4376098.38,L=5465859.45,E=1089761.07,B=-177.54,π=-3588.36
+        - removed 146 firms  (next step B=-304.0721705474189)
+        - add 133 new firms (Nentry)
+t= 971 [firms] n=20329,sumA=1373580.61,sumL=5458751.90,sumK=6716732.95,sumπ=75363
+       [bank]  avgRate=0.09,D=4365460.01,L=5448805.37,E=1083345.36,B=-304.07,π=-6719.79
+        - removed 175 firms  (next step B=-156.71942177714038)
+        - add 134 new firms (Nentry)
+t= 972 [firms] n=20288,sumA=1352468.41,sumL=5426755.73,sumK=6878381.28,sumπ=-23677
+       [bank]  avgRate=0.09,D=4330477.86,L=5416726.78,E=1086248.93,B=-156.72,π=2746.85
+        - removed 73 firms  (next step B=-40.88961478455848)
+        - add 129 new firms (Nentry)
+t= 973 [firms] n=20344,sumA=1461197.46,sumL=5441328.71,sumK=6772700.40,sumπ=106192
+       [bank]  avgRate=0.09,D=4342810.52,L=5431244.63,E=1088434.11,B=-40.89,π=2144.29
+        - removed 32 firms  (next step B=-16.93292528116392)
+        - add 129 new firms (Nentry)
+t= 974 [firms] n=20441,sumA=1358037.80,sumL=5451910.14,sumK=7021879.31,sumπ=-105721
+       [bank]  avgRate=0.09,D=4340153.08,L=5442170.54,E=1102017.45,B=-16.93,π=13566.41
+        - removed 1 firms  (next step B=-0.005967622598843203)
+        - add 122 new firms (Nentry)
+t= 975 [firms] n=20562,sumA=1303554.20,sumL=5519888.54,sumK=6774645.65,sumπ=-56923
+       [bank]  avgRate=0.09,D=4405218.41,L=5510087.27,E=1104868.86,B=-0.01,π=2851.40
+        - removed 19 firms  (next step B=-6.784969657158248)
+        - add 128 new firms (Nentry)
+t= 976 [firms] n=20671,sumA=1334762.98,sumL=5535022.70,sumK=6784213.49,sumπ=28657
+       [bank]  avgRate=0.09,D=4427332.46,L=5524344.32,E=1097011.86,B=-6.78,π=-7863.79
+        - removed 212 firms  (next step B=-241.20362098832055)
+        - add 134 new firms (Nentry)
+t= 977 [firms] n=20593,sumA=1365765.51,sumL=5495070.08,sumK=6861172.61,sumπ=28497
+       [bank]  avgRate=0.09,D=4392106.58,L=5485059.32,E=1092952.74,B=-241.20,π=-4300.33
+        - removed 186 firms  (next step B=-308.7158421922866)
+        - add 133 new firms (Nentry)
+t= 978 [firms] n=20540,sumA=1462733.55,sumL=5474276.98,sumK=6871201.14,sumπ=94519
+       [bank]  avgRate=0.09,D=4370389.52,L=5464763.71,E=1094374.19,B=-308.72,π=1112.73
+        - removed 68 firms  (next step B=-62.179549061417035)
+        - add 130 new firms (Nentry)
+t= 979 [firms] n=20602,sumA=1411895.97,sumL=5481510.61,sumK=7041363.15,sumπ=-53384
+       [bank]  avgRate=0.09,D=4364326.23,L=5471870.96,E=1107544.73,B=-62.18,π=13108.36
+        - removed 5 firms  (next step B=-1.2330033539011276)
+        - add 123 new firms (Nentry)
+t= 980 [firms] n=20720,sumA=1523287.50,sumL=5547344.01,sumK=6908316.35,sumπ=108938
+       [bank]  avgRate=0.09,D=4422091.39,L=5537723.66,E=1115632.27,B=-1.23,π=8086.30
+        - removed 3 firms  (next step B=-0.46345632330264575)
+        - add 125 new firms (Nentry)
+t= 981 [firms] n=20842,sumA=1537097.01,sumL=5587594.34,sumK=7222320.32,sumπ=11310
+       [bank]  avgRate=0.09,D=4444808.12,L=5578161.34,E=1133353.22,B=-0.46,π=17720.49
+        - removed 0 firms 
+        - add 120 new firms (Nentry)
+t= 982 [firms] n=20962,sumA=1480442.68,sumL=5675784.32,sumK=7226591.51,sumπ=-59054
+       [bank]  avgRate=0.09,D=4513358.20,L=5666766.10,E=1153407.89,B=0.00,π=20054.68
+        - removed 0 firms 
+        - add 118 new firms (Nentry)
+t= 983 [firms] n=21080,sumA=1384064.66,sumL=5776299.84,sumK=7200048.18,sumπ=-98738
+       [bank]  avgRate=0.09,D=4603361.56,L=5767039.47,E=1163677.92,B=0.00,π=10270.02
+        - removed 0 firms 
+        - add 124 new firms (Nentry)
+t= 984 [firms] n=21204,sumA=1357590.52,sumL=5828693.60,sumK=7116500.25,sumπ=-28954
+       [bank]  avgRate=0.09,D=4660377.92,L=5818389.58,E=1158011.66,B=0.00,π=-5666.25
+        - removed 173 firms  (next step B=-139.45613114529016)
+        - add 132 new firms (Nentry)
+t= 985 [firms] n=21163,sumA=1299438.20,sumL=5800647.56,sumK=7131924.91,sumπ=-60699
+       [bank]  avgRate=0.09,D=4642786.17,L=5790058.32,E=1147272.15,B=-139.46,π=-10878.97
+        - removed 267 firms  (next step B=-253.70470574322113)
+        - add 136 new firms (Nentry)
+t= 986 [firms] n=21032,sumA=1204432.45,sumL=5747211.16,sumK=6988673.28,sumπ=-97578
+       [bank]  avgRate=0.09,D=4605994.98,L=5736360.77,E=1130365.79,B=-253.70,π=-17160.07
+        - removed 411 firms  (next step B=-620.4520298987037)
+        - add 139 new firms (Nentry)
+t= 987 [firms] n=20760,sumA=1168828.89,sumL=5662373.58,sumK=6772015.24,sumπ=-38053
+       [bank]  avgRate=0.09,D=4548456.59,L=5651828.94,E=1103372.35,B=-620.45,π=-27613.89
+        - removed 597 firms  (next step B=-1018.3285195608029)
+        - add 144 new firms (Nentry)
+t= 988 [firms] n=20307,sumA=1327739.44,sumL=5526636.72,sumK=6660304.77,sumπ=156567
+       [bank]  avgRate=0.09,D=4441720.61,L=5516861.75,E=1075141.14,B=-1018.33,π=-29249.54
+        - removed 659 firms  (next step B=-1110.472411905443)
+        - add 146 new firms (Nentry)
+t= 989 [firms] n=19794,sumA=1285180.42,sumL=5384285.36,sumK=6871529.91,sumπ=-44905
+       [bank]  avgRate=0.09,D=4304227.68,L=5375705.70,E=1071478.02,B=-1110.47,π=-4773.59
+        - removed 244 firms  (next step B=-209.88130082932017)
+        - add 135 new firms (Nentry)
+t= 990 [firms] n=19685,sumA=1265066.53,sumL=5367676.87,sumK=6610654.63,sumπ=-22676
+       [bank]  avgRate=0.09,D=4290028.84,L=5357390.10,E=1067361.26,B=-209.88,π=-4326.64
+        - removed 152 firms  (next step B=-191.94173258483113)
+        - add 133 new firms (Nentry)
+t= 991 [firms] n=19666,sumA=1189558.94,sumL=5347167.74,sumK=6592219.83,sumπ=-78037
+       [bank]  avgRate=0.09,D=4276511.72,L=5336806.31,E=1060294.58,B=-191.94,π=-7258.62
+        - removed 205 firms  (next step B=-242.8872675923237)
+        - add 135 new firms (Nentry)
+t= 992 [firms] n=19596,sumA=1151466.87,sumL=5312314.97,sumK=6426538.62,sumπ=-40644
+       [bank]  avgRate=0.09,D=4256659.25,L=5301472.92,E=1044813.67,B=-242.89,π=-15723.80
+        - removed 334 firms  (next step B=-513.4259479457476)
+        - add 140 new firms (Nentry)
+t= 993 [firms] n=19402,sumA=1170793.99,sumL=5234523.37,sumK=6348152.21,sumπ=16844
+       [bank]  avgRate=0.09,D=4198244.32,L=5224068.36,E=1025824.04,B=-513.43,π=-19503.06
+        - removed 451 firms  (next step B=-1073.2007119522561)
+        - add 143 new firms (Nentry)
+t= 994 [firms] n=19094,sumA=1242000.99,sumL=5138079.97,sumK=6328589.06,sumπ=68915
+       [bank]  avgRate=0.09,D=4116609.64,L=5129120.21,E=1012510.58,B=-1073.20,π=-14386.67
+        - removed 372 firms  (next step B=-607.6044790034709)
+        - add 141 new firms (Nentry)
+t= 995 [firms] n=18863,sumA=1331060.81,sumL=5072114.29,sumK=6385857.07,sumπ=86580
+       [bank]  avgRate=0.09,D=4052479.22,L=5062552.88,E=1010073.66,B=-607.60,π=-3044.52
+        - removed 158 firms  (next step B=-289.5703845547467)
+        - add 134 new firms (Nentry)
+t= 996 [firms] n=18839,sumA=1301833.05,sumL=5059645.36,sumK=6479967.96,sumπ=-31710
+       [bank]  avgRate=0.09,D=4030918.34,L=5050368.29,E=1019449.95,B=-289.57,π=9086.72
+        - removed 8 firms  (next step B=-0.5355037068070913)
+        - add 124 new firms (Nentry)
+t= 997 [firms] n=18955,sumA=1360752.78,sumL=5106964.85,sumK=6379568.26,sumπ=56441
+       [bank]  avgRate=0.09,D=4070867.79,L=5097249.75,E=1026381.96,B=-0.54,π=6931.48
+        - removed 5 firms  (next step B=-0.05744357931764928)
+        - add 125 new firms (Nentry)
+t= 998 [firms] n=19075,sumA=1275232.32,sumL=5141525.61,sumK=6561219.72,sumπ=-88020
+       [bank]  avgRate=0.09,D=4094327.91,L=5131909.82,E=1037581.91,B=-0.06,π=11199.89
+        - removed 2 firms  (next step B=-0.013118898595668949)
+        - add 122 new firms (Nentry)
+t= 999 [firms] n=19195,sumA=1287444.64,sumL=5197749.46,sumK=6387401.47,sumπ=9773
+       [bank]  avgRate=0.09,D=4148477.32,L=5187909.54,E=1039432.22,B=-0.01,π=1850.30
+        - removed 27 firms  (next step B=-12.822956731434505)
+        - add 129 new firms (Nentry)
+[total failures in all times = 120343 
+aggregate_output
+growth_rate
+zipf_rank
+zipf_density
+zipf_density
+profits
+bad_debt
+bad_debt
+bankrupcies
+interest_rate

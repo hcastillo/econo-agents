@@ -1,19 +1,16 @@
 #!/usr/bin/env python
 # coding: utf-8
-# +
-import pandas as ps
-import numpy as np
 import random
 import math
 import matplotlib.pyplot as plt
-import argparse
-import sys,code
+import os
 
 random.seed(40579)
+OUTPUT_DIRECTORY = "output"
 
 class Config:
-    T = 100  # time (1000)f
-    N = 1000 # number of firms (10000)
+    T = 100   # time (1000)f
+    N = 1000  # number of firms (10000)
     Ñ = 180   # size parameter
 
     
@@ -204,8 +201,6 @@ class BankSector():
         for firm in Status.firms:
             profitDeposits += firm.r * firm.L
         BankSector.D =BankSector.determineDeposits()
-        resto = BankSector.getAverageRate() * ( (1-Config.ω)*BankSector.D + BankSector.E )
-        ###Statistics.log("        - bank profit= dep(%s) - %s , which  %s * [(1-w)*%s+%s]"%( profitDeposits  ,resto, BankSector.getAverageRate(), BankSector.D , BankSector.E ))
         return profitDeposits  - BankSector.getAverageRate() * ( (1-Config.ω)*BankSector.D + BankSector.E )
 
     def getAverageRate():
@@ -265,8 +260,6 @@ def updateFirmsStatus():
     
 
 def updateFirms():
-    # update Kt-1 and At-1 (Status.firmsKsum && Status.firmsAsum):
-    updateFirmsStatus()
     totalK =0.0
     totalL =0.0
     Status.firmsπsum = 0.0
@@ -281,11 +274,13 @@ def updateFirms():
         totalK += firm.K
         firm.u = firm.determineU()
 
-        firm.A = firm.determineAssets()
+        firm.determineφ()
         firm.π = firm.determineProfit()
-        #Statistics.log("  firm%s  π=%0.2f A=%0.2f K=%0.2f L=%0.2f r=%0.2f" %( firm.id,firm.π,firm.A ,firm.K, firm.L, firm.r))
+        firm.A = firm.determineAssets()
         Status.firmsπsum += firm.π
-        
+    # update Kt-1 and At-1 (Status.firmsKsum && Status.firmsAsum):
+    updateFirmsStatus()
+
     #firms that would try to become innnovators   
     ##for firm in Status.firms:
         ##if hasattr(firm, 'z') and firm.z > 0.025:
@@ -296,7 +291,7 @@ def updateFirms():
             
     # calcular si son green / brown:
     for firm in Status.firms:
-        if firm.φ>0.15:
+        if firm.φ>Config.thresold_green:
             firm.green = True 
     
 def determineNentry():
@@ -313,7 +308,8 @@ def updateBankSector():
 
 
 
-# +
+#%%
+
 def doSimulation():
     Status.initialize()
     updateFirmsStatus()
@@ -329,14 +325,37 @@ def doSimulation():
         updateBankL()
         updateFirms()
         updateBankSector()
-        
-        
-     
-# -
 
+def calculateTechnologicalLeap():
+    leapCount = sum(1 for firm in Status.firms if firm.φ > Config.thresold_green)
+    return leapCount
 
+def calculateAverageOutput():
+    total_firms = len(Status.firms)
+    average_output = Status.firmsYsum / total_firms if total_firms > 0 else 0
+    return average_output
 
-# +
+def calculateBankruptcyRatio():
+    total_firms = len(Status.firms)
+    bankruptcy_ratio = Status.numFailuresGlobal / total_firms if total_firms > 0 else 0
+    return bankruptcy_ratio
+
+def calculateAverageProductivity():
+    total_φ = 0
+    num_firms = len(Status.firms)
+    for firm in Status.firms:
+        total_φ += firm.φ
+    average_φ = total_φ / num_firms if num_firms > 0 else 0
+    return average_φ
+def show_info():
+    print("bankruptcy ratio: ", calculateBankruptcyRatio())
+    print("avg productivity: ", calculateAverageProductivity())
+    print("avg output: ", calculateAverageOutput())
+    print("tecnological leap: ", calculateTechnologicalLeap())
+    print('Number of firms at the end of the simulation: ', len(Status.firms))
+    print("num failures final: ",Status.numFailuresGlobal)
+#%%
+
 def graph_zipf_density1(show=True):
     Statistics.log("zipf_density")
     plt.clf()
@@ -358,7 +377,7 @@ def graph_zipf_density1(show=True):
     plt.ylabel("log freq")
     plt.xlabel("log K")
     plt.title("Zipf plot of firm sizes (modified)")
-    plt.show() if show else plt.savefig("zipf_density1.svg" )
+    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY+"/zipf_density1.svg" )
     
 def graph_zipf_rank(show=True):
     Statistics.log("zipf_rank")
@@ -375,7 +394,7 @@ def graph_zipf_rank(show=True):
     plt.xlabel("log K")
     plt.ylabel("log rank")
     plt.title("Rank of K (zipf)" )
-    plt.show() if show else plt.savefig("zipf_rank.svg")
+    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY+"/zipf_rank.svg")
 
 def graph_aggregate_output(show=True):
     Statistics.log("aggregate_output")
@@ -390,7 +409,7 @@ def graph_aggregate_output(show=True):
     plt.ylabel("log K")
     plt.xlabel("t")
     plt.title("Logarithm of aggregate output" )
-    plt.show() if show else plt.savefig("aggregate_output.svg")
+    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY+"/aggregate_output.svg")
 
 def graph_profits(show=True):
     Statistics.log("profits")
@@ -404,7 +423,7 @@ def graph_profits(show=True):
     plt.ylabel("avg profits")
     plt.xlabel("t")
     plt.title("profits of companies" )
-    plt.show() if show else plt.savefig("profits.svg")
+    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY+"/profits.svg")
 
 def graph_bankrupcies(show=True):
     Statistics.log("bankrupcies")
@@ -418,7 +437,7 @@ def graph_bankrupcies(show=True):
     plt.ylabel("num of bankrupcies")
     plt.xlabel("t")
     plt.title("Bankrupted firms")
-    plt.show() if show else plt.savefig("bankrupted.svg")
+    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY+"/bankrupted.svg")
     
 def graph_baddebt(show=True):
     Statistics.log("bad_debt")
@@ -433,7 +452,7 @@ def graph_baddebt(show=True):
     plt.ylabel("avg bad debt")
     plt.xlabel("t")
     plt.title("Bad debt" )
-    plt.show() if show else plt.savefig("bad_debt_avg.svg")
+    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY+"/bad_debt_avg.svg")
 
 def graph_y(show=True):
     Statistics.log("y")
@@ -447,7 +466,7 @@ def graph_y(show=True):
     plt.ylabel("ln Y")
     plt.xlabel("t")
     plt.title("Y" )
-    plt.show() if show else plt.savefig("y.svg" )
+    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY+"/y.svg" )
 
 def graph_k(show=True):
     Statistics.log("k")
@@ -461,7 +480,7 @@ def graph_k(show=True):
     plt.ylabel("ln K")
     plt.xlabel("t")
     plt.title("K" )
-    plt.show() if show else plt.savefig("k.svg" )
+    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY+"/k.svg" )
 
 def graph_φ(show=True):
     Statistics.log("")
@@ -475,7 +494,7 @@ def graph_φ(show=True):
     plt.ylabel("Phi")
     plt.xlabel("t")
     plt.title("Phi" )
-    plt.show() if show else plt.savefig("phi.svg" )
+    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY+"/phi.svg" )
     
     
     
@@ -491,7 +510,7 @@ def graph_zeta(show=True):
     plt.ylabel("Zeta")
     plt.xlabel("t")
     plt.title("Zeta" )
-    plt.show() if show else plt.savefig("zeta.svg" )
+    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY+"/zeta.svg" )
     
     
 def graph_mu(show=True):
@@ -506,7 +525,7 @@ def graph_mu(show=True):
     plt.ylabel("Mu")
     plt.xlabel("t")
     plt.title("Mu" )
-    plt.show() if show else plt.savefig("mu.svg" )
+    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY+"/mu.svg" )
 
     
 def graph_new_firms( show=True):
@@ -521,7 +540,7 @@ def graph_new_firms( show=True):
     plt.ylabel("New firms")
     plt.xlabel("t")
     plt.title("New firms" )
-    plt.show() if show else plt.savefig("new_firms.svg" )
+    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY+"/new_firms.svg" )
     
 def graph_zipf_density(show=True):
     Statistics.log("zipf_density")
@@ -543,7 +562,7 @@ def graph_zipf_density(show=True):
     plt.ylabel("log freq")
     plt.xlabel("log K")
     plt.title("Zipf plot of firm sizes" )
-    plt.show() if show else plt.savefig("zipf_density.svg")
+    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY+"/zipf_density.svg")
     
 def graph_interest_rate(show):
     Statistics.log("interest_rate")
@@ -558,7 +577,7 @@ def graph_interest_rate(show):
     plt.ylabel("mean rate")
     plt.xlabel("t")
     plt.title("Mean interest rates of companies")
-    plt.show() if show else plt.savefig("interest_rate.svg")
+    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY+"/interest_rate.svg")
     
 def graph_growth_rate(show):
     Statistics.log("growth_rate")
@@ -574,7 +593,7 @@ def graph_growth_rate(show):
     plt.ylabel("growth")
     plt.xlabel("t")
     plt.title("Growth rates of agg output")
-    plt.show() if show else plt.savefig("growth_rates.svg")
+    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY+"/growth_rates.svg")
 
 def graph_newentry(show=True):
     Statistics.log("newentry")
@@ -589,7 +608,7 @@ def graph_newentry(show=True):
     plt.ylabel("New Entries")
     plt.xlabel("t")
     plt.title("New Entries")
-    plt.show() if show else plt.savefig("newentry.svg")
+    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY+"/newentry.svg")
 
 def graph_bankrupcies(show=True):
     Statistics.log("bankrupcies")
@@ -603,74 +622,59 @@ def graph_bankrupcies(show=True):
     plt.ylabel("num of bankrupcies")
     plt.xlabel("t")
     plt.title("Bankrupted firms")
-    plt.show() if show else plt.savefig("bankrupted.svg")
-    
+    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY+"/bankrupted.svg")
+
+def graph_zeta(show):
+    # Create a line plot of the zeta values for all firms over time
+    for i in range(len(Statistics.firmsz)):
+        plt.plot([i] * len(Statistics.firmsz[i]), Statistics.firmsz[i], 'b.', alpha=0.5)
+
+    plt.title("Zeta Values for All Firms over Time")
+    plt.xlabel("Time")
+    plt.ylabel("Zeta Value")
+    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY+"/zeta.svg")
 def show_graph(show):
     graph_profits(show)
     graph_mu(show)
     graph_new_firms(show)
-    #graph_k(show)
-    #graph_y(show)
-    #graph_interest_rate(show)
-    #graph_growth_rate(show)
+    graph_y(show)
     #graph_baddebt(show)
-    
-def isNotebook():
+    graph_zeta(show)
+    graph_interest_rate(show)
+    graph_φ(show)
+    graph_k(show)
+    graph_newentry(show)
+    graph_bankrupcies(show)
+    graph_growth_rate(show)
+
+
+
+#%%
+
+
+
+def is_notebook():
     try:
-        from IPython import get_ipython
-        if 'IPKernelApp' not in get_ipython().config:  # pragma: no cover
-            return False
-    except ImportError:
+        __IPYTHON__
+        return True
+    except NameError:
         return False
-    except AttributeError:
-        return False
-    return True
 
 
-if not isNotebook():
-    Statistics.doLog = True
-doSimulation()
-show_graph(isNotebook())
+#%%
 
 
+if __name__ == "__main__":
+    if not os.path.isdir(OUTPUT_DIRECTORY):
+        os.mkdir(OUTPUT_DIRECTORY)
+    if is_notebook():
+        Statistics.doLog = True
+        doSimulation()
+        show_graph(True)
+        show_info()
+    else:
+        doSimulation()
+        show_graph(False)
 
-# -
-
-show_graph(isNotebook())
-
-graph_y(True)
-
-total=0
-for i in Statistics.firmsz:
-    for j in i:
-        if j>0.001:
-            # print(j)
-            total+=1
-print(total)
-
-# +
-zetavalues = Statistics.firmsz
-
-# Create a line plot of the zeta values for all firms over time
-for i in range(len(zetavalues)):
-    plt.plot([i] * len(zetavalues[i]), zetavalues[i], 'b.', alpha=0.3)
-
-plt.title("Zeta Values for All Firms over Time")
-plt.xlabel("Time")
-plt.ylabel("Zeta Value")
-plt.show()
-# -
-
-graph_interest_rate(True)
-
-graph_φ(True)
-
-graph_baddebt(True)
-
-graph_k(True)
-
-graph_newentry(True)
-
-graph_bankrupcies(True)
 
 

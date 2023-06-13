@@ -219,7 +219,6 @@ def updateFirmsStatus():
     Status.firmsGrowRate.append( 0 if Status.t==0 else (Status.firmsKsums[ Status.t ]-Status.firmsKsums[ Status.t -1])/Status.firmsKsums[ Status.t - 1] )
 
 def updateFirms():
-    # update Kt-1 and At-1 (Status.firmsKsum && Status.firmsAsum):
     #updateFirmsStatus()
     totalK =0.0
     totalL =0.0
@@ -238,7 +237,7 @@ def updateFirms():
         firm.π = firm.determineProfit()
         firm.A = firm.determineAssets()
         Status.firmsπsum += firm.π
-        #Statistics.log("  firm%s  π=%0.2f A=%0.2f K=%0.2f L=%0.2f r=%0.2f" %( firm.id,firm.π,firm.A ,firm.K, firm.L, firm.r))
+    # update Kt-1 and At-1 (Status.firmsKsum && Status.firmsAsum):
     updateFirmsStatus()
     #Statistics.log("  K:%s L:%s pi:%s" % (totalK,totalL,Status.firmsπsum) )
     #code.interact(local=locals())
