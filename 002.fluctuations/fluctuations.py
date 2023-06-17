@@ -16,44 +16,46 @@ random.seed(40579)
 
 OUTPUT_DIRECTORY = "output"
 
+
 class Config:
     T = 1000  # time (1000)
-    N = 10000 # number of firms
-    Ñ = 180   # size parameter
+    N = 10000  # number of firms
+    Ñ = 180  # size parameter
 
-    φ = 0.1   # capital productivity (constant and uniform)
-    c = 1     # parameter bankruptcy cost equation
+    φ = 0.1  # capital productivity (constant and uniform)
+    c = 1  # parameter bankruptcy cost equation
     α = 0.08  # alpha, ratio equity-loan
-    g = 1.1   # variable cost
-    ω = 0.002 # markdown interest rate (the higher it is, the monopolistic power of banks)
-    λ = 0.3   # credit assets rate
-    d = 100   # location cost
-    e = 0.1   # sensivity
+    g = 1.1  # variable cost
+    ω = 0.002  # markdown interest rate (the higher it is, the monopolistic power of banks)
+    λ = 0.3  # credit assets rate
+    d = 100  # location cost
+    e = 0.1  # sensivity
 
     # firms initial parameters
-    K_i0 = 100   # capital
-    A_i0 = 20    # asset
-    L_i0 = 80    # liability
-    π_i0 = 0     # profit
-    B_i0 = 0     # bad debt
+    K_i0 = 100  # capital
+    A_i0 = 20  # asset
+    L_i0 = 80  # liability
+    π_i0 = 0  # profit
+    B_i0 = 0  # bad debt
 
     # risk coefficient for bank sector (Basel)
-    v    = 0.2
+    v = 0.2
 
-#%%
+
+# %%
 class Statistics:
     doLog = False
     logfile = None
 
-    def enableLog(logfile:str=None):
+    def enableLog(logfile: str = None):
         if logfile:
-            Statistics.logfile = open(OUTPUT_DIRECTORY+"/"+logfile, 'w', encoding="utf-8")
+            Statistics.logfile = open(OUTPUT_DIRECTORY + "/" + logfile, 'w', encoding="utf-8")
         Statistics.doLog = True
 
     def log(cadena):
         if Statistics.doLog:
             if Statistics.logfile:
-                Statistics.logfile.write(cadena+"\n")
+                Statistics.logfile.write(cadena + "\n")
             else:
                 print(cadena)
 
@@ -65,22 +67,26 @@ class Statistics:
     firmsπ = []
     firmsL = []
     firmsB = []
-    rate   = []
+    firmsNum = []
+    rate = []
 
+    @staticmethod
     def getStatistics():
-        Statistics.log("t=%4s [firms] n=%s,sumA=%.2f,sumL=%.2f,sumK=%.2f,sumπ=%2.f" % ( Status.t,len(Status.firms), \
-                                                                   Status.firmsAsum,Status.firmsLsum,
-                                                                   Status.firmsKsum,Status.firmsπsum))
-        Statistics.log("       [bank]  avgRate=%.2f,D=%.2f,L=%.2f,E=%0.2f,B=%.2f,π=%.2f" % ( BankSector.getAverageRate() , \
-                                                                   BankSector.D,BankSector.L,BankSector.E,
-                                                                   BankSector.B,BankSector.π))
-        ##Statistics.log( " r=%s " % Status.firms[0].r )
-
-        Statistics.firmsK.append( Status.firmsKsum )
-        Statistics.firmsπ.append( Status.firmsπsum )
-        Statistics.firmsL.append( Status.firmsLsum )
-        Statistics.firmsB.append( BankSector.B )
-        Statistics.rate.append( BankSector.getAverageRate() )
+        Statistics.log("t=%4s [firms] n=%s,sumA=%.2f,sumL=%.2f,sumK=%.2f,sumπ=%2.f" % (Status.t, len(Status.firms), \
+                                                                                       Status.firmsAsum,
+                                                                                       Status.firmsLsum,
+                                                                                       Status.firmsKsum,
+                                                                                       Status.firmsπsum))
+        Statistics.log("       [bank]  avgRate=%.2f,D=%.2f,L=%.2f,E=%0.2f,B=%.2f,π=%.2f" % (BankSector.getAverageRate(), \
+                                                                                            BankSector.D, BankSector.L,
+                                                                                            BankSector.E,
+                                                                                            BankSector.B, BankSector.π))
+        Statistics.firmsK.append(Status.firmsKsum)
+        Statistics.firmsπ.append(Status.firmsπsum)
+        Statistics.firmsL.append(Status.firmsLsum)
+        Statistics.firmsB.append(BankSector.B)
+        Statistics.firmsNum.append(len(Status.firms))
+        Statistics.rate.append(BankSector.getAverageRate())
 
 
 class Status:
@@ -92,11 +98,12 @@ class Status:
     numFailuresGlobal = 0
     t = 0
 
-
     firmsKsums = []
     firmsGrowRate = []
 
     firmIdMax = 0
+
+    @staticmethod
     def getNewFirmId():
         Status.firmIdMax += 1
         return Status.firmIdMax
@@ -104,14 +111,15 @@ class Status:
     @staticmethod
     def initialize():
         for i in range(Config.N):
-            Status.firms.append( Firm() )
+            Status.firms.append(Firm())
+
 
 class Firm():
-    K = Config.K_i0   # capital
-    A = Config.A_i0   # asset
-    r = 0.0           # rate money is given by banksector
-    L = Config.L_i0   # credit
-    π = 0.0           # profit
+    K = Config.K_i0  # capital
+    A = Config.A_i0  # asset
+    r = 0.0  # rate money is given by banksector
+    L = Config.L_i0  # credit
+    π = 0.0  # profit
     u = 0.0
 
     def __init__(self):
@@ -119,64 +127,73 @@ class Firm():
 
     def determineCredit(self):
         # (equation 11)
-        result = Config.λ * BankSector.L * self.K / Status.firmsKsum + (1 - Config.λ) * BankSector.L * self.A / Status.firmsAsum
+        result = Config.λ * BankSector.L * self.K / Status.firmsKsum + (
+                    1 - Config.λ) * BankSector.L * self.A / Status.firmsAsum
         ## Statistics.log( "a*%s*%s/%s+(1-a)*%s*%s/%s  L=%s" % (BankSector.L,self.K,Status.firmsKsum,BankSector.L,self.A,Status.firmsAsum,result))
         return result
 
     def determineInterestRate(self):
         # (equation 12)
-        return (2 + self.A ) / (  2 * Config.c * Config.g * ( 1/ ( Config.c * Config.φ ) + self.π + self.A  ) + \
-                                  2 * Config.c * Config.g * BankSector.L * ( Config.λ*self.__ratioK() + (1-Config.λ)*self.__ratioA() ) )
+        return (2 + self.A) / (2 * Config.c * Config.g * (1 / (Config.c * Config.φ) + self.π + self.A) + \
+                               2 * Config.c * Config.g * BankSector.L * (
+                                           Config.λ * self.__ratioK() + (1 - Config.λ) * self.__ratioA()))
+
     def __ratioK(self):
         return self.K / Status.firmsKsum
+
     def __ratioA(self):
         return self.A / Status.firmsAsum
 
     def determineCapital(self):
         # equation 9
         ## este es el negativo
-        #Statistics.log( "(%s -%s * %s ) / (%s * %s  * %s * %s)   + %s / (2 * %s * %s)" %
+        # Statistics.log( "(%s -%s * %s ) / (%s * %s  * %s * %s)   + %s / (2 * %s * %s)" %
         #                  (Config.φ ,Config.g, self.r, Config.c, Config.φ, Config.g,  self.r, self.A , Config.g , self.r))
-        return ( Config.φ - Config.g * self.r ) / (Config.c * Config.φ  * Config.g * self.r) + (self.A / (2 * Config.g * self.r))
-
+        return (Config.φ - Config.g * self.r) / (Config.c * Config.φ * Config.g * self.r) + (
+                    self.A / (2 * Config.g * self.r))
 
     def determineU(self):
-        return random.random()*2
+        return random.random() * 2
 
     def determineAssets(self):
         # equation 6
-        return self.A + self.π # K - self.L
+        return self.A + self.π  # K - self.L
 
     def determineProfit(self):
         # equation 5
-        result =  ( self.u * Config.φ - Config.g * self.r ) * self.K
+        result = (self.u * Config.φ - Config.g * self.r) * self.K
         # Statistics.log("%s = %s * %s -  %s * %s / %s" % (result,self.u,Config.φ,Config.g,self.r,self.K))
         return result
 
+
 class BankSector():
     E = Config.N * Config.L_i0 * Config.v
-    B = Config.B_i0   # bad debt
+    B = Config.B_i0  # bad debt
     D = 0
     π = 0
 
+    @staticmethod
     def determineDeposits():
-        #as a residual from L = E+D, ergo D=L-E
+        # as a residual from L = E+D, ergo D=L-E
         return BankSector.L - BankSector.E
 
+    @staticmethod
     def determineProfit():
         # equation 13
         profitDeposits = 0.0
         for firm in Status.firms:
             profitDeposits += firm.r * firm.L
         BankSector.D = BankSector.determineDeposits()
-        return profitDeposits  - BankSector.getAverageRate() * ( (1-Config.ω)*BankSector.D + BankSector.E )
+        return profitDeposits - BankSector.getAverageRate() * ((1 - Config.ω) * BankSector.D + BankSector.E)
 
+    @staticmethod
     def getAverageRate():
         average = 0.0
         for firm in Status.firms:
             average += firm.r
         return average / len(Status.firms)
 
+    @staticmethod
     def determineEquity():
         # equation 14
         result = BankSector.π + BankSector.E - BankSector.B
@@ -186,23 +203,24 @@ class BankSector():
 
 def removeBankruptedFirms():
     i = 0
-    BankSector.B  = 0.0
+    BankSector.B = 0.0
     for firm in Status.firms[:]:
-        if (firm.π+firm.A) < 0:
+        if (firm.π + firm.A) < 0:
             ##Statistics.log("quiebra %d %s %s" % (firm.id,firm.π,firm.A))
             # bankrupt: we sum Bn-1
             ##Statistics.log( "    %s+%s<0 y  %s-%s=%s" % (firm.π,firm.A,firm.L,firm.K,(firm.L-firm.K)))
-            BankSector.B += ( firm.L - firm.K ) #**********************************
-            Status.firms.remove( firm )
+            BankSector.B += (firm.L - firm.K)  # **********************************
+            Status.firms.remove(firm)
             Status.numFailuresGlobal += 1
             i += 1
-    Statistics.log("        - removed %d firms %s" % ( i, "" if i==0 else " (next step B=%s)" % BankSector.B ))
-    Statistics.bankrupcy.append( i )
+    Statistics.log("        - removed %d firms %s" % (i, "" if i == 0 else " (next step B=%s)" % BankSector.B))
+    Statistics.bankrupcy.append(i)
     return i
+
 
 def addFirms(Nentry):
     for i in range(Nentry):
-        Status.firms.append( Firm() )
+        Status.firms.append(Firm())
     Statistics.log("        - add %d new firms (Nentry)" % Nentry)
 
 
@@ -215,21 +233,24 @@ def updateFirmsStatus():
         Status.firmsKsum += firm.K
         Status.firmsLsum += firm.L
 
-    Status.firmsKsums.append( Status.firmsKsum )
-    Status.firmsGrowRate.append( 0 if Status.t==0 else (Status.firmsKsums[ Status.t ]-Status.firmsKsums[ Status.t -1])/Status.firmsKsums[ Status.t - 1] )
+    Status.firmsKsums.append(Status.firmsKsum)
+    Status.firmsGrowRate.append(
+        0 if Status.t == 0 else (Status.firmsKsums[Status.t] - Status.firmsKsums[Status.t - 1]) / Status.firmsKsums[
+            Status.t - 1])
+
 
 def updateFirms():
-    #updateFirmsStatus()
-    totalK =0.0
-    totalL =0.0
+    # updateFirmsStatus()
+    totalK = 0.0
+    totalL = 0.0
     Status.firmsπsum = 0.0
     for firm in Status.firms:
         firm.L = firm.determineCredit()
         totalL += firm.L
         firm.r = firm.determineInterestRate()
-        kantes= firm.K
+        kantes = firm.K
         firm.K = firm.determineCapital()
-        #Statistics.log("firm%d. K=%f > K=%f" % (firm.id, kantes, firm.K))
+        # Statistics.log("firm%d. K=%f > K=%f" % (firm.id, kantes, firm.K))
 
         totalK += firm.K
         firm.u = firm.determineU()
@@ -239,15 +260,18 @@ def updateFirms():
         Status.firmsπsum += firm.π
     # update Kt-1 and At-1 (Status.firmsKsum && Status.firmsAsum):
     updateFirmsStatus()
-    #Statistics.log("  K:%s L:%s pi:%s" % (totalK,totalL,Status.firmsπsum) )
-    #code.interact(local=locals())
+    # Statistics.log("  K:%s L:%s pi:%s" % (totalK,totalL,Status.firmsπsum) )
+    # code.interact(local=locals())
+
 
 def determineNentry():
     # equation 15
-    return round( Config.Ñ / (1 + math.exp( Config.d * ( BankSector.getAverageRate()- Config.e ))) )
+    return round(Config.Ñ / (1 + math.exp(Config.d * (BankSector.getAverageRate() - Config.e))))
+
 
 def updateBankL():
     BankSector.L = BankSector.E / Config.v
+
 
 def updateBankSector():
     BankSector.π = BankSector.determineProfit()
@@ -255,7 +279,7 @@ def updateBankSector():
     BankSector.D = BankSector.L - BankSector.E
 
 
-#%%
+# %%
 def doSimulation(doDebug=False):
     Status.initialize()
     updateFirmsStatus()
@@ -271,55 +295,56 @@ def doSimulation(doDebug=False):
         updateFirms()
         updateBankSector()
 
-        if doDebug and ( doDebug==t or doDebug==-1):
+        if doDebug and (doDebug == t or doDebug == -1):
             set_trace()
 
 
 def graph_zipf_density(show=True):
     Statistics.log("zipf_density")
     plt.clf()
-    zipf = {} # log K = freq
+    zipf = {}  # log K = freq
     for firm in Status.firms:
-        if round(firm.K)>0:
-            x = math.log( round(firm.K) )
+        if round(firm.K) > 0:
+            x = math.log(round(firm.K))
             if x in zipf:
                 zipf[x] += 1
             else:
                 zipf[x] = 1
-    x=[]
-    y=[]
+    x = []
+    y = []
     for i in zipf:
-        x.append( i )
-        y.append( math.log(zipf[i]))
+        x.append(i)
+        y.append(math.log(zipf[i]))
     plt.plot(x, y, 'o', color="blue")
     plt.ylabel("log freq")
     plt.xlabel("log K")
-    plt.title("Zipf plot of firm sizes" )
-    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY+"/zipf_density.svg")
+    plt.title("Zipf plot of firm sizes")
+    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/zipf_density.svg")
 
-#%%
+
+# %%
 def graph_zipf_density1(show=True):
     Statistics.log("zipf_density")
     plt.clf()
-    zipf = {} # log K = freq
+    zipf = {}  # log K = freq
     for firm in Status.firms:
-        if round(firm.K)>0:
-            x = math.log( round(firm.K) )
+        if round(firm.K) > 0:
+            x = math.log(round(firm.K))
             if x in zipf:
                 zipf[x] += 1
             else:
                 zipf[x] = 1
-    x=[]
-    y=[]
+    x = []
+    y = []
     for i in zipf:
-        if math.log( zipf[i]) >= 1:
-            x.append( i )
-            y.append( math.log(zipf[i]))
+        if math.log(zipf[i]) >= 1:
+            x.append(i)
+            y.append(math.log(zipf[i]))
     plt.plot(x, y, 'o', color="blue")
     plt.ylabel("log freq")
     plt.xlabel("log K")
     plt.title("Zipf plot of firm sizes (modified)")
-    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY+"/zipf_density1.svg" )
+    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/zipf_density1.svg")
 
 
 def graph_zipf_rank(show=True):
@@ -328,16 +353,17 @@ def graph_zipf_rank(show=True):
     y = []  # log K = freq
     x = []
     for firm in Status.firms:
-        if round(firm.K)>0:
-            y.append( math.log( firm.K ) )
-    y.sort(); y.reverse()
+        if round(firm.K) > 0:
+            y.append(math.log(firm.K))
+    y.sort();
+    y.reverse()
     for i in range(len(y)):
-        x.append(math.log(float(i+1)))
-    plt.plot( y,x, 'o', color="blue" )
+        x.append(math.log(float(i + 1)))
+    plt.plot(y, x, 'o', color="blue")
     plt.xlabel("log K")
     plt.ylabel("log rank")
-    plt.title("Rank of K (zipf)" )
-    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY+"/zipf_rank.svg")
+    plt.title("Rank of K (zipf)")
+    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/zipf_rank.svg")
 
 
 def graph_aggregate_output(show=True):
@@ -351,8 +377,8 @@ def graph_aggregate_output(show=True):
     plt.plot(yy, xx1, 'b-')
     plt.ylabel("log K")
     plt.xlabel("t")
-    plt.title("Logarithm of aggregate output" )
-    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY+"/aggregate_output.svg")
+    plt.title("Logarithm of aggregate output")
+    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/aggregate_output.svg")
 
 
 def graph_profits(show=True):
@@ -361,13 +387,14 @@ def graph_profits(show=True):
     xx = []
     yy = []
     for i in range(150, Config.T):
-            xx.append(i)
-            yy.append( Statistics.firmsπ[i] / Config.N  )
+        xx.append(i)
+        yy.append(Statistics.firmsπ[i] / Statistics.firmsNum[i])
     plt.plot(xx, yy, 'b-')
     plt.ylabel("avg profits")
     plt.xlabel("t")
-    plt.title("profits of companies" )
-    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY+"/profits.svg")
+    plt.title("profits of companies")
+    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/profits.svg")
+
 
 def graph_baddebt(show=True):
     Statistics.log("bad_debt")
@@ -375,13 +402,14 @@ def graph_baddebt(show=True):
     xx = []
     yy = []
     for i in range(150, Config.T):
-            xx.append( i )
-            yy.append( -Statistics.firmsB[i]/Config.N  )
+        xx.append(i)
+        yy.append(-Statistics.firmsB[i] / Statistics.firmsNum[i])
     plt.plot(xx, yy, 'b-')
     plt.ylabel("avg bad debt")
     plt.xlabel("t")
-    plt.title("Bad debt" )
-    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY+"/bad_debt_avg.svg")
+    plt.title("Bad debt")
+    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/bad_debt_avg.svg")
+
 
 def graph_bankrupcies(show=True):
     Statistics.log("bankrupcies")
@@ -389,13 +417,13 @@ def graph_bankrupcies(show=True):
     xx = []
     yy = []
     for i in range(150, Config.T):
-            xx.append(i)
-            yy.append( Statistics.bankrupcy[i] )
+        xx.append(i)
+        yy.append(Statistics.bankrupcy[i])
     plt.plot(xx, yy, 'b-')
     plt.ylabel("num of bankrupcies")
     plt.xlabel("t")
     plt.title("Bankrupted firms")
-    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY+"/bankrupted.svg")
+    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/bankrupted.svg")
 
 
 def graph_bad_debt(show=True):
@@ -406,12 +434,12 @@ def graph_bad_debt(show=True):
     for i in range(150, Config.T):
         if Statistics.firmsB[i] < 0:
             xx.append(i)
-            yy.append( math.log( -Statistics.firmsB[i]) )
+            yy.append(math.log(-Statistics.firmsB[i]))
     plt.plot(xx, yy, 'b-')
     plt.ylabel("ln B")
     plt.xlabel("t")
-    plt.title("Bad debt" )
-    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY+"/bad_debt.svg" )
+    plt.title("Bad debt")
+    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/bad_debt.svg")
 
 
 def graph_interest_rate(show):
@@ -421,12 +449,12 @@ def graph_interest_rate(show):
     yy = []
     for i in range(150, Config.T):
         yy.append(i)
-        xx2.append( Statistics.rate[i]  )
+        xx2.append(Statistics.rate[i])
     plt.plot(yy, xx2, 'b-')
     plt.ylabel("mean rate")
     plt.xlabel("t")
     plt.title("Mean interest rates of companies")
-    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY+"/interest_rate.svg")
+    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/interest_rate.svg")
 
 
 def graph_growth_rate(show):
@@ -435,14 +463,15 @@ def graph_growth_rate(show):
     xx2 = []
     yy = []
     for i in range(150, Config.T):
-        if Status.firmsGrowRate[i]!=0:
+        if Status.firmsGrowRate[i] != 0:
             yy.append(i)
-            xx2.append( Status.firmsGrowRate[i]  )
+            xx2.append(Status.firmsGrowRate[i])
     plt.plot(yy, xx2, 'b-')
     plt.ylabel("growth")
     plt.xlabel("t")
     plt.title("Growth rates of agg output")
-    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY+"/growth_rates.svg")
+    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/growth_rates.svg")
+
 
 def graph_qq_firms_k(show):
     plt.clf()
@@ -513,6 +542,7 @@ def graph_distribution_kl(show):
     plt.tight_layout()
     plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/distribution.svg")
 
+
 def show_graph(show):
     graph_aggregate_output(show)
     graph_growth_rate(show)
@@ -528,15 +558,16 @@ def show_graph(show):
     graph_qq(show)
     graph_distribution_kl(show)
 
-#%%
+
+# %%
 
 def doInteractive():
     parser = argparse.ArgumentParser(description="Fluctuations firms/banks")
     parser.add_argument("--graph", action="store_true", help="Shows the graph")
     parser.add_argument("--sizeparam", type=int, help="Size parameter (default=%s)" % Config.Ñ)
-    parser.add_argument("--savegraph", action="store_true", help="Save the graphs in "+OUTPUT_DIRECTORY)
+    parser.add_argument("--savegraph", action="store_true", help="Save the graphs in " + OUTPUT_DIRECTORY)
     parser.add_argument("--log", action="store_true", help="Log (stdout default)")
-    parser.add_argument("--logfile", type=str, help="Log to file in "+OUTPUT_DIRECTORY)
+    parser.add_argument("--logfile", type=str, help="Log to file in " + OUTPUT_DIRECTORY)
     parser.add_argument("--debug", help="Do a debug session at t=X, default each t", type=int, const=-1, nargs='?')
     args = parser.parse_args()
 
@@ -558,6 +589,7 @@ def doInteractive():
     if args.savegraph:
         show_graph(False)
 
+
 def is_notebook():
     try:
         __IPYTHON__
@@ -565,10 +597,11 @@ def is_notebook():
     except NameError:
         return False
 
-#%%
+
+# %%
 
 
-#%%
+# %%
 
 if __name__ == "__main__":
     if not os.path.isdir(OUTPUT_DIRECTORY):
@@ -578,8 +611,3 @@ if __name__ == "__main__":
     else:
         doSimulation()
         show_graph(True)
-
-
-
-
-
