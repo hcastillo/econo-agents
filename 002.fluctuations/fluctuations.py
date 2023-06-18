@@ -240,7 +240,6 @@ def updateFirmsStatus():
 
 
 def updateFirms():
-    # updateFirmsStatus()
     totalK = 0.0
     totalL = 0.0
     Status.firmsπsum = 0.0

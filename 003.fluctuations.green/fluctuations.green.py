@@ -10,8 +10,8 @@ OUTPUT_DIRECTORY = "output"
 
 
 class Config:
-    T = 200  # time (1000)
-    N = 1000  # number of firms (10000)
+    T = 1000  # time (1000)
+    N = 10000  # number of firms (10000)
     Ñ = 180  # size parameter
 
     c = 1  # parameter bankruptcy cost equation
@@ -35,12 +35,14 @@ class Config:
     delta1 = 0.001
     delta2 = 0.002
 
-    sigma = 1  # 0.02-0.05
-    beta = 1  # bernoulli
+    sigma = 0.05 # 0.02-0.05
+    beta = 2  # bernoulli
 
-    coef_zeta = 0.01
+    coef_zeta = 0.006
 
-    thresold_green = 0.5
+    thresold_green = 0.15
+
+    initial_t_graphs = 0
 
 
 # +
@@ -124,13 +126,6 @@ class Status:
         return Status.firmIdMax
 
     @staticmethod
-    def getAverageφ():
-        phi = 0
-        for i in Status.firms:
-            phi += i.φ
-        return phi / len(Status.firms)
-
-    @staticmethod
     def initialize():
         for i in range(Config.N):
             Status.firms.append(Firm())
@@ -154,8 +149,6 @@ class Firm():
 
     def __init__(self):
         self.id = Status.getNewFirmId()
-        # if Status.t>0:
-        #    self.φ = Status.getAverageφ()
 
     def determineCredit(self):
         # (equation 11)
@@ -417,8 +410,7 @@ def graph_aggregate_output(show=True):
     plt.clf()
     xx1 = []
     yy = []
-    rangemin = 150 if Config.T > 150 else 0
-    for i in range(rangemin, Config.T):
+    for i in range(Config.initial_t_graphs, Config.T):
         yy.append(i)
         xx1.append(math.log(Status.firmsKsums[i]))
     plt.plot(yy, xx1, 'b-')
@@ -433,7 +425,7 @@ def graph_profits(show=True):
     plt.clf()
     xx = []
     yy = []
-    for i in range(Config.T):
+    for i in range(Config.initial_t_graphs, Config.T):
         xx.append(i)
         yy.append(Statistics.firmsπ[i] / Statistics.firmsNum[i])
     plt.plot(xx, yy, 'b-')
@@ -448,7 +440,7 @@ def graph_bankrupcies(show=True):
     plt.clf()
     xx = []
     yy = []
-    for i in range(Config.T):
+    for i in range(Config.initial_t_graphs, Config.T):
         xx.append(i)
         yy.append(Statistics.bankrupcy[i])
     plt.plot(xx, yy, 'b-')
@@ -463,8 +455,7 @@ def graph_baddebt(show=True):
     plt.clf()
     xx = []
     yy = []
-    rangemin = 150 if Config.T > 150 else 0
-    for i in range(rangemin, Config.T):
+    for i in range(Config.initial_t_graphs, Config.T):
         xx.append(i)
         yy.append(-Statistics.firmsB[i] / Statistics.firmsNum[i])
     plt.plot(xx, yy, 'b-')
@@ -479,7 +470,7 @@ def graph_y(show=True):
     plt.clf()
     xx = []
     yy = []
-    for i in range(Config.T):
+    for i in range(Config.initial_t_graphs, Config.T):
         xx.append(i)
         yy.append(math.log(Statistics.firmsY[i]))
     plt.plot(xx, yy, 'b-')
@@ -494,7 +485,7 @@ def graph_k(show=True):
     plt.clf()
     xx = []
     yy = []
-    for i in range(Config.T):
+    for i in range(Config.initial_t_graphs, Config.T):
         xx.append(i)
         yy.append(math.log(Statistics.firmsK[i]))
     plt.plot(xx, yy, 'b-')
@@ -509,7 +500,7 @@ def graph_φ(show=True):
     plt.clf()
     xx = []
     yy = []
-    for i in range(Config.T):
+    for i in range(Config.initial_t_graphs, Config.T):
         xx.append(i)
         yy.append(Statistics.firmsφ[i] / Statistics.firmsNum[i])
     plt.plot(xx, yy, 'b-')
@@ -522,16 +513,13 @@ def graph_φ(show=True):
 def graph_zeta(show=True):
     Statistics.log("zeta")
     plt.clf()
-    xx = []
-    yy = []
-    for i in range(Config.T):
-        xx.append(i)
-        yy.append(Statistics.firmsz[i] / Statistics.firmsNum[i])
-    plt.plot(xx, yy, 'b-')
-    plt.ylabel("Zeta")
-    plt.xlabel("t")
-    plt.title("Zeta")
-    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/zeta.svg")
+    for i in range(len(Statistics.firmsz)):
+        plt.plot([i] * len(Statistics.firmsz[i]), Statistics.firmsz[i], 'b.', alpha=0.3)
+    plt.title("Zeta Values for All Firms over Time")
+    plt.xlabel("Time")
+    plt.ylabel("Zeta Value")
+    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY +"/zeta.svg")
+
 
 
 def graph_mu(show=True):
@@ -539,7 +527,7 @@ def graph_mu(show=True):
     plt.clf()
     xx = []
     yy = []
-    for i in range(Config.T):
+    for i in range(Config.initial_t_graphs, Config.T):
         xx.append(i)
         yy.append(Statistics.firmsmu[i] / Statistics.firmsNum[i])
     plt.plot(xx, yy, 'b-')
@@ -554,7 +542,7 @@ def graph_new_firms(show=True):
     plt.clf()
     xx = []
     yy = []
-    for i in range(Config.T):
+    for i in range(Config.initial_t_graphs, Config.T):
         xx.append(i)
         yy.append(Statistics.newFirms[i])
     plt.plot(xx, yy, 'b-')
@@ -592,8 +580,7 @@ def graph_interest_rate(show):
     plt.clf()
     xx2 = []
     yy = []
-    rangemin = 150 if Config.T > 150 else 0
-    for i in range(rangemin, Config.T):
+    for i in range(Config.initial_t_graphs, Config.T):
         yy.append(i)
         xx2.append(Statistics.rate[i])
     plt.plot(yy, xx2, 'b-')
@@ -608,8 +595,7 @@ def graph_growth_rate(show):
     plt.clf()
     xx2 = []
     yy = []
-    rangemin = 150 if Config.T > 150 else 0
-    for i in range(rangemin, Config.T):
+    for i in range(Config.initial_t_graphs, Config.T):
         if Status.firmsGrowRate[i] != 0:
             yy.append(i)
             xx2.append(Status.firmsGrowRate[i])
@@ -620,28 +606,12 @@ def graph_growth_rate(show):
     plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/growth_rates.svg")
 
 
-def graph_newentry(show=True):
-    Statistics.log("newentry")
-    plt.clf()
-    xx = []
-    yy = []
-    for i in range(Config.T):
-        xx.append(i)
-        yy.append(Statistics.newFirms[i])
-        # addFirms(yy[-1])
-    plt.plot(xx, yy, 'b-')
-    plt.ylabel("New Entries")
-    plt.xlabel("t")
-    plt.title("New Entries")
-    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/newentry.svg")
-
-
 def graph_bankrupcies(show=True):
     Statistics.log("bankrupcies")
     plt.clf()
     xx = []
     yy = []
-    for i in range(0, Config.T):
+    for i in range(Config.initial_t_graphs, Config.T):
         xx.append(i)
         yy.append(Statistics.bankrupcy[i])
     plt.plot(xx, yy, 'b-')
@@ -672,7 +642,6 @@ def show_graph(show):
     graph_interest_rate(show)
     graph_φ(show)
     graph_k(show)
-    graph_newentry(show)
     graph_bankrupcies(show)
     graph_growth_rate(show)
 
