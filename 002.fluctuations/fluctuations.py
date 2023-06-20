@@ -29,7 +29,7 @@ class Config:
     ω = 0.002  # markdown interest rate (the higher it is, the monopolistic power of banks)
     λ = 0.3  # credit assets rate
     d = 100  # location cost
-    e = 0.1  # sensivity
+    e = 0.1  # sensitivity
 
     # firms initial parameters
     K_i0 = 100  # capital
@@ -62,7 +62,7 @@ class Statistics:
     firms = []
     bankSector = []
 
-    bankrupcy = []
+    bankruptcy = []
     firmsK = []
     firmsπ = []
     firmsL = []
@@ -72,12 +72,12 @@ class Statistics:
 
     @staticmethod
     def getStatistics():
-        Statistics.log("t=%4s [firms] n=%s,sumA=%.2f,sumL=%.2f,sumK=%.2f,sumπ=%2.f" % (Status.t, len(Status.firms), \
+        Statistics.log("t=%4s [firms] n=%s,sumA=%.2f,sumL=%.2f,sumK=%.2f,sumπ=%2.f" % (Status.t, len(Status.firms),
                                                                                        Status.firmsAsum,
                                                                                        Status.firmsLsum,
                                                                                        Status.firmsKsum,
                                                                                        Status.firmsπsum))
-        Statistics.log("       [bank]  avgRate=%.2f,D=%.2f,L=%.2f,E=%0.2f,B=%.2f,π=%.2f" % (BankSector.getAverageRate(), \
+        Statistics.log("       [bank]  avgRate=%.2f,D=%.2f,L=%.2f,E=%0.2f,B=%.2f,π=%.2f" % (BankSector.getAverageRate(),
                                                                                             BankSector.D, BankSector.L,
                                                                                             BankSector.E,
                                                                                             BankSector.B, BankSector.π))
@@ -134,7 +134,7 @@ class Firm():
 
     def determineInterestRate(self):
         # (equation 12)
-        return (2 + self.A) / (2 * Config.c * Config.g * (1 / (Config.c * Config.φ) + self.π + self.A) + \
+        return (2 + self.A) / (2 * Config.c * Config.g * (1 / (Config.c * Config.φ) + self.π + self.A) +
                                2 * Config.c * Config.g * BankSector.L * (
                                            Config.λ * self.__ratioK() + (1 - Config.λ) * self.__ratioA()))
 
@@ -146,9 +146,6 @@ class Firm():
 
     def determineCapital(self):
         # equation 9
-        ## este es el negativo
-        # Statistics.log( "(%s -%s * %s ) / (%s * %s  * %s * %s)   + %s / (2 * %s * %s)" %
-        #                  (Config.φ ,Config.g, self.r, Config.c, Config.φ, Config.g,  self.r, self.A , Config.g , self.r))
         return (Config.φ - Config.g * self.r) / (Config.c * Config.φ * Config.g * self.r) + (
                     self.A / (2 * Config.g * self.r))
 
@@ -214,7 +211,7 @@ def removeBankruptedFirms():
             Status.numFailuresGlobal += 1
             i += 1
     Statistics.log("        - removed %d firms %s" % (i, "" if i == 0 else " (next step B=%s)" % BankSector.B))
-    Statistics.bankrupcy.append(i)
+    Statistics.bankruptcy.append(i)
     return i
 
 
@@ -298,7 +295,7 @@ def doSimulation(doDebug=False):
             set_trace()
 
 
-def graph_zipf_density(show=True):
+def plot_zipf_density(show=True):
     Statistics.log("zipf_density")
     plt.clf()
     zipf = {}  # log K = freq
@@ -322,7 +319,7 @@ def graph_zipf_density(show=True):
 
 
 # %%
-def graph_zipf_density1(show=True):
+def plot_zipf_density1(show=True):
     Statistics.log("zipf_density")
     plt.clf()
     zipf = {}  # log K = freq
@@ -346,7 +343,7 @@ def graph_zipf_density1(show=True):
     plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/zipf_density1.svg")
 
 
-def graph_zipf_rank(show=True):
+def plot_zipf_rank(show=True):
     Statistics.log("zipf_rank")
     plt.clf()
     y = []  # log K = freq
@@ -365,7 +362,7 @@ def graph_zipf_rank(show=True):
     plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/zipf_rank.svg")
 
 
-def graph_aggregate_output(show=True):
+def plot_aggregate_output(show=True):
     Statistics.log("aggregate_output")
     plt.clf()
     xx1 = []
@@ -380,7 +377,7 @@ def graph_aggregate_output(show=True):
     plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/aggregate_output.svg")
 
 
-def graph_profits(show=True):
+def plot_profits(show=True):
     Statistics.log("profits")
     plt.clf()
     xx = []
@@ -395,7 +392,7 @@ def graph_profits(show=True):
     plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/profits.svg")
 
 
-def graph_baddebt(show=True):
+def plot_baddebt(show=True):
     Statistics.log("bad_debt")
     plt.clf()
     xx = []
@@ -410,14 +407,14 @@ def graph_baddebt(show=True):
     plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/bad_debt_avg.svg")
 
 
-def graph_bankrupcies(show=True):
+def plot_bankrupcies(show=True):
     Statistics.log("bankrupcies")
     plt.clf()
     xx = []
     yy = []
     for i in range(150, Config.T):
         xx.append(i)
-        yy.append(Statistics.bankrupcy[i])
+        yy.append(Statistics.bankruptcy[i])
     plt.plot(xx, yy, 'b-')
     plt.ylabel("num of bankrupcies")
     plt.xlabel("t")
@@ -425,7 +422,7 @@ def graph_bankrupcies(show=True):
     plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/bankrupted.svg")
 
 
-def graph_bad_debt(show=True):
+def plot_bad_debt(show=True):
     Statistics.log("bad_debt")
     plt.clf()
     xx = []
@@ -441,7 +438,7 @@ def graph_bad_debt(show=True):
     plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/bad_debt.svg")
 
 
-def graph_interest_rate(show):
+def plot_interest_rate(show):
     Statistics.log("interest_rate")
     plt.clf()
     xx2 = []
@@ -456,7 +453,7 @@ def graph_interest_rate(show):
     plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/interest_rate.svg")
 
 
-def graph_growth_rate(show):
+def plot_growth_rate(show):
     Statistics.log("growth_rate")
     plt.clf()
     xx2 = []
@@ -472,7 +469,7 @@ def graph_growth_rate(show):
     plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/growth_rates.svg")
 
 
-def graph_qq_firms_k(show):
+def plot_qq_firms_k(show):
     plt.clf()
     fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(6, 4))
     sm.qqplot(
@@ -496,7 +493,7 @@ def graph_qq_firms_k(show):
     plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/qq_firmsk.svg")
 
 
-def graph_qq(show):
+def plot_qq(show):
     plt.clf()
     fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(10, 4))
     sm.qqplot(
@@ -510,7 +507,7 @@ def graph_qq(show):
     axs[0].set_title('Chart Q-Q firmsK', fontsize=10, fontweight="bold")
     axs[0].tick_params(labelsize=7)
     sm.qqplot(
-        pd.DataFrame(Statistics.bankrupcy, columns=['Bankrupcies']),
+        pd.DataFrame(Statistics.bankruptcy, columns=['Bankrupcies']),
         fit=True,
         line='q',
         alpha=0.4,
@@ -522,7 +519,7 @@ def graph_qq(show):
     plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/qq.svg")
 
 
-def graph_distribution_kl(show):
+def plot_distribution_kl(show):
     plt.clf()
     fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(10, 4))
 
@@ -542,31 +539,31 @@ def graph_distribution_kl(show):
     plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/distribution.svg")
 
 
-def show_graph(show):
-    graph_aggregate_output(show)
-    graph_growth_rate(show)
-    graph_zipf_rank(show)
-    graph_zipf_density(show)
-    graph_zipf_density1(show)
-    graph_profits(show)
-    graph_bad_debt(show)
-    graph_baddebt(show)
-    graph_bankrupcies(show)
-    graph_interest_rate(show)
-    graph_qq_firms_k(show)
-    graph_qq(show)
-    graph_distribution_kl(show)
+def show_figures(show):
+    plot_aggregate_output(show)
+    plot_growth_rate(show)
+    plot_zipf_rank(show)
+    plot_zipf_density(show)
+    plot_zipf_density1(show)
+    plot_profits(show)
+    plot_bad_debt(show)
+    plot_baddebt(show)
+    plot_bankrupcies(show)
+    plot_interest_rate(show)
+    plot_qq_firms_k(show)
+    plot_qq(show)
+    plot_distribution_kl(show)
 
 
 # %%
 
 def doInteractive():
     parser = argparse.ArgumentParser(description="Fluctuations firms/banks")
-    parser.add_argument("--graph", action="store_true", help="Shows the graph")
+    parser.add_argument("--plot", action="store_true", help="Shows the plots")
     parser.add_argument("--sizeparam", type=int, help="Size parameter (default=%s)" % Config.Ñ)
-    parser.add_argument("--savegraph", action="store_true", help="Save the graphs in " + OUTPUT_DIRECTORY)
+    parser.add_argument("--saveplot", action="store_true", help="Save the plots in dir '" + OUTPUT_DIRECTORY+"'")
     parser.add_argument("--log", action="store_true", help="Log (stdout default)")
-    parser.add_argument("--logfile", type=str, help="Log to file in " + OUTPUT_DIRECTORY)
+    parser.add_argument("--logfile", type=str, help="Log to file in directory '" + OUTPUT_DIRECTORY+"'")
     parser.add_argument("--debug", help="Do a debug session at t=X, default each t", type=int, const=-1, nargs='?')
     args = parser.parse_args()
 
@@ -583,10 +580,10 @@ def doInteractive():
         Statistics.log("[total failures in all times = %s " % Status.numFailuresGlobal)
     else:
         Statistics.log("[no failures]")
-    if args.graph:
-        show_graph(True)
-    if args.savegraph:
-        show_graph(False)
+    if args.plot:
+        show_figures(True)
+    if args.saveplot:
+        show_figures(False)
 
 
 def is_notebook():
@@ -609,4 +606,4 @@ if __name__ == "__main__":
         doInteractive()
     else:
         doSimulation()
-        show_graph(True)
+        show_figures(True)
