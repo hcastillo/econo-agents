@@ -11,6 +11,7 @@ import pandas as pd
 import numpy as np
 from scipy import stats
 import matplotlib.pyplot as plt
+from decimal import Decimal
 
 random.seed(40579)
 
@@ -23,33 +24,31 @@ class Config:
     Ñ = 180  # size parameter
 
     c = 1  # parameter bankruptcy cost equation
-    α = 0.08  # alpha, ratio equity-loan
-    g = 1.1  # variable cost
-    ω = 0.002  # markdown interest rate (the higher it is, the monopolistic power of banks)
-    λ = 0.3  # credit assets rate
+    α = Decimal("0.08")  # alpha, ratio equity-loan
+    g = Decimal("1.1")  # variable cost
+    ω = Decimal("0.002")  # markdown interest rate (the higher it is, the monopolistic power of banks)
+    λ = Decimal("0.3")  # credit assets rate
     d = 100  # location cost
-    e = 0.1  # sensitivity
+    e = Decimal("0.1")  # sensitivity
 
     # firms initial parameters
-    K_i0 = 100  # capital
-    A_i0 = 20  # asset
-    L_i0 = 80  # liability
-    π_i0 = 0  # profit
-    B_i0 = 0  # bad debt
-
+    K_i0 = Decimal("100")  # capital
+    A_i0 = Decimal("20")  # asset
+    L_i0 = Decimal("80")  # liability
+    π_i0 = Decimal("0")  # profit
+    B_i0 = Decimal("0")  # bad debt
+    φ_i0 = Decimal("0.1") # initial phi
     # risk coefficient for bank sector (Basel)
-    v = 0.2
+    v = Decimal("0.2")
 
-    delta1 = 0.001
-    delta2 = 0.002
+    delta1 = Decimal("0.001")
+    delta2 = Decimal("0.002")
 
-    coef_zeta = 0.04
+    coef_zeta = Decimal("0.04")
     add_new_firms = True
 
-    sigma = 0.02  # 0.02-0.05
+    sigma = Decimal("0.01")  # 0.02-0.05
     beta = 2  # bernoulli
-
-    thresold_green = 0.15
 
 
 # %%
@@ -78,6 +77,7 @@ class Statistics:
     firmsL = []
     firmsB = []
     firmsNum = []
+    newFirms = []
     rate = []
     firmsz = []
     firmsmu = []
@@ -114,12 +114,12 @@ class Statistics:
 
 class Status:
     firms = []
-    firmsKsum = 0.0
-    firmsAsum = 0.0
-    firmsLsum = 0.0
-    firmsπsum = 0.0
-    firmsAsum = 0.0
-    firmsφsum = 0.0
+    firmsKsum = Decimal("0.0")
+    firmsAsum = Decimal("0.0")
+    firmsLsum = Decimal("0.0")
+    firmsπsum = Decimal("0.0")
+    firmsAsum = Decimal("0.0")
+    firmsφsum = Decimal("0.0")
 
     numFailuresGlobal = 0
     t = 0
@@ -143,16 +143,15 @@ class Status:
 class Firm():
     K = Config.K_i0  # capital
     A = Config.A_i0  # asset
-    r = 0.0  # rate money is given by banksector
+    r = Decimal("0.0")  # rate money is given by banksector
     L = Config.L_i0  # credit
-    π = 0.0  # profit
-    u = 0.0
+    π = Decimal("0.0")  # profit
+    u = Decimal("0.0")
 
-    φ = 0.1  # initial capital productivity
-    mu = 0.0
-    zeta = 0.0
-    green = False
-    innovation = 0.0
+    φ = Config.φ_i0  # initial capital productivity
+    mu = Decimal("0.0")
+    zeta = Decimal("0.0")
+    innovation = Decimal("0.0")
 
     def __init__(self):
         self.id = Status.getNewFirmId()
@@ -182,7 +181,7 @@ class Firm():
                 self.A / (2 * Config.g * self.r))
 
     def determineU(self):
-        return random.random() * 2
+        return Decimal(str(random.random())) * 2
 
     def determineAssets(self):
         # equation 6
@@ -212,8 +211,8 @@ class Firm():
 class BankSector():
     E = Config.N * Config.L_i0 * Config.v
     B = Config.B_i0  # bad debt
-    D = 0
-    π = 0
+    D = Decimal("0")
+    π = Decimal("0")
 
     @staticmethod
     def determineDeposits():
@@ -223,7 +222,7 @@ class BankSector():
     @staticmethod
     def determineProfit():
         # equation 13
-        profitDeposits = 0.0
+        profitDeposits = Decimal("0.0")
         for firm in Status.firms:
             profitDeposits += firm.r * firm.L
         BankSector.D = BankSector.determineDeposits()
@@ -231,7 +230,7 @@ class BankSector():
 
     @staticmethod
     def getAverageRate():
-        average = 0.0
+        average = Decimal("0.0")
         for firm in Status.firms:
             average += firm.r
         return average / len(Status.firms)
@@ -246,7 +245,7 @@ class BankSector():
 
 def removeBankruptedFirms():
     i = 0
-    BankSector.B = 0.0
+    BankSector.B = Decimal("0.0")
     for firm in Status.firms[:]:
         if (firm.π + firm.A) < 0:
             ##Statistics.log("quiebra %d %s %s" % (firm.id,firm.π,firm.A))
@@ -268,11 +267,11 @@ def addFirms(Nentry):
 
 
 def updateFirmsStatus():
-    Status.firmsAsum = 0.0
-    Status.firmsKsum = 0.0
-    Status.firmsLsum = 0.0
-    Status.firmsYsum = 0.0
-    Status.firmsφsum = 0.0
+    Status.firmsAsum = Decimal("0.0")
+    Status.firmsKsum = Decimal("0.0")
+    Status.firmsLsum = Decimal("0.0")
+    Status.firmsYsum = Decimal("0.0")
+    Status.firmsφsum = Decimal("0.0")
     for firm in Status.firms:
         Status.firmsAsum += firm.A
         Status.firmsKsum += firm.K
@@ -287,9 +286,9 @@ def updateFirmsStatus():
 
 
 def updateFirms():
-    totalK = 0.0
-    totalL = 0.0
-    Status.firmsπsum = 0.0
+    totalK = Decimal("0.0")
+    totalL = Decimal("0.0")
+    Status.firmsπsum = Decimal("0.0")
     for firm in Status.firms:
         firm.L = firm.determineCredit()
         totalL += firm.L
@@ -336,6 +335,7 @@ def doSimulation(doDebug=False):
         Statistics.getStatistics()
         removeBankruptedFirms()
         newFirmsNumber = determineNentry()
+        Statistics.newFirms.append(newFirmsNumber)
         addFirms(newFirmsNumber)
         updateBankL()
         updateFirms()
@@ -343,6 +343,22 @@ def doSimulation(doDebug=False):
 
         if doDebug and (doDebug == t or doDebug == -1):
             set_trace()
+
+
+def plot_newentry(show=True):
+    Statistics.log("newentry")
+    plt.clf()
+    xx = []
+    yy = []
+    for i in range(Config.T):
+        xx.append(i)
+        yy.append(Statistics.newFirms[i])
+        addFirms(yy[-1])
+    plt.plot(xx, yy, 'b-')
+    plt.ylabel("New Entries")
+    plt.xlabel("t")
+    plt.title("New Entries")
+    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/newentry.svg")
 
 
 def plot_zipf_density(show=True):
@@ -527,7 +543,7 @@ def plot_zeta(show=True):
     plt.title("Zeta Values for All Firms over Time")
     plt.xlabel("Time")
     plt.ylabel("Zeta Value")
-    plt.show() if show else plt.savefig("zeta.svg")
+    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/zeta.svg")
 
 
 def plot_y(show):
@@ -542,7 +558,7 @@ def plot_y(show):
     plt.ylabel("ln Y")
     plt.xlabel("t")
     plt.title("Y")
-    plt.show() if show else plt.savefig("y.svg")
+    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/y.svg")
 
 
 def plot_phi(show=True):
@@ -557,7 +573,22 @@ def plot_phi(show=True):
     plt.ylabel("Phi")
     plt.xlabel("t")
     plt.title("Phi")
-    plt.show() if show else plt.savefig("phi.svg")
+    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/phi.svg")
+
+
+def plot_k(show):
+    Statistics.log("k")
+    plt.clf()
+    xx = []
+    yy = []
+    for i in range(Config.T):
+        xx.append(i)
+        yy.append( math.log( Statistics.firmsK[i]) )
+    plt.plot(xx, yy, 'b-')
+    plt.ylabel("ln K")
+    plt.xlabel("t")
+    plt.title("K")
+    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/k.svg")
 
 
 def plot_qq_firms_k(show):
@@ -642,7 +673,7 @@ def plot_mu(show=True):
     plt.ylabel("Mu")
     plt.xlabel("t")
     plt.title("Mu")
-    plt.show() if show else plt.savefig("mu.svg")
+    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/mu.svg")
 
 
 def show_figures(show):
@@ -656,13 +687,16 @@ def show_figures(show):
     plot_baddebt(show)
     plot_bankrupcies(show)
     plot_interest_rate(show)
-    plot_qq_firms_k(show)
+    # plot_qq_firms_k(show)
     plot_qq(show)
     plot_distribution_kl(show)
     plot_y(show)
     plot_phi(show)
     plot_zeta(show)
     plot_mu(show)
+    plot_k(show)
+    plot_newentry(show)
+
 
 # %%
 
