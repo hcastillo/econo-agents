@@ -289,7 +289,7 @@ def updateFirms():
         firm.u = firm.determineU()
 
         firm.π = firm.determineProfit()
-        firm.determineφ()  # <-----------------------------
+        firm.determineφ()
         firm.A = firm.determineAssets()
         Status.firmsπsum += firm.π
     # update Kt-1 and At-1 (Status.firmsKsum && Status.firmsAsum):

@@ -41,13 +41,13 @@ class Config:
     # risk coefficient for bank sector (Basel)
     v = Decimal("0.2")
 
-    delta1 = Decimal("0.001")
-    delta2 = Decimal("0.002")
+    delta1 = 0.001
+    delta2 = 0.002
 
-    coef_zeta = Decimal("0.04")
+    coef_zeta = Decimal("0.006")
     add_new_firms = True
 
-    sigma = Decimal("0.01")  # 0.02-0.05
+    sigma = Decimal("0.5")  # 0.02-0.05
     beta = 2  # bernoulli
 
 
@@ -200,11 +200,9 @@ class Firm():
 
     def determineφ(self):
         if self.zeta > Config.coef_zeta:
-            self.φ = self.φ * (1 + random.uniform(Config.delta1, Config.delta2))
-            Status.cuenta_zeta += 1
+            self.φ = self.φ * (1 + Decimal(str(random.uniform(Config.delta1, Config.delta2))))
         else:
             self.φ = self.φ
-            Status.cuenta_nozeta += 1
         return self.φ
 
 
@@ -301,6 +299,7 @@ def updateFirms():
         firm.u = firm.determineU()
 
         firm.π = firm.determineProfit()
+        firm.determineφ()
         firm.A = firm.determineAssets()
         Status.firmsπsum += firm.π
     # update Kt-1 and At-1 (Status.firmsKsum && Status.firmsAsum):
