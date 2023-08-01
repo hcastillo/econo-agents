@@ -203,10 +203,9 @@ def removeBankruptedFirms():
     BankSector.B = 0.0
     for firm in Status.firms[:]:
         if (firm.π + firm.A) < 0:
-            ##Statistics.log("quiebra %d %s %s" % (firm.id,firm.π,firm.A))
             # bankrupt: we sum Bn-1
-            ##Statistics.log( "    %s+%s<0 y  %s-%s=%s" % (firm.π,firm.A,firm.L,firm.K,(firm.L-firm.K)))
-            BankSector.B += (firm.L - firm.K)  # **********************************
+            if firm.L - firm.K < 0:
+                BankSector.B += (firm.L - firm.K)
             Status.firms.remove(firm)
             Status.numFailuresGlobal += 1
             i += 1
