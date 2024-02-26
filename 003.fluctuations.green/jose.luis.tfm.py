@@ -22,8 +22,8 @@ OUTPUT_DIRECTORY = "output"
 
 
 class Config:
-    T = 1000  # time (1000)
-    N = 10000  # number of firms
+    T = 100  # time (1000)
+    N = 100  # number of firms
     Ñ = 180  # size parameter
 
     c = 1  # parameter bankruptcy cost equation

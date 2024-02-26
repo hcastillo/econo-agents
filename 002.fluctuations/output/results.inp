@@ -1,0 +1,3 @@
+open results.csv
+setobs 1 1 --special-time-series
+gnuplot firmsK --time-series --with-lines --output=display

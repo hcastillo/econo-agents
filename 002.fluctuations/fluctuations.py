@@ -3,10 +3,9 @@
 
 import argparse
 import math
-import os
+import os, sys
 import random
 from pdb import set_trace
-import statsmodels.api as sm
 import pandas as pd
 import numpy as np
 from scipy import stats
@@ -49,6 +48,8 @@ class Statistics:
 
     def enableLog(logfile: str = None):
         if logfile:
+            if not os.path.exists(OUTPUT_DIRECTORY):
+                os.mkdir(OUTPUT_DIRECTORY)
             Statistics.logfile = open(OUTPUT_DIRECTORY + "/" + logfile, 'w', encoding="utf-8")
         Statistics.doLog = True
 
@@ -68,7 +69,10 @@ class Statistics:
     firmsL = []
     firmsB = []
     firmsNum = []
+    firmsNEntry = []
     rate = []
+    bankL = []
+    bankπ = []
 
     @staticmethod
     def getStatistics():
@@ -84,6 +88,8 @@ class Statistics:
         Statistics.firmsK.append(Status.firmsKsum)
         Statistics.firmsπ.append(Status.firmsπsum)
         Statistics.firmsL.append(Status.firmsLsum)
+        Statistics.bankπ.append(BankSector.π)
+        Statistics.bankL.append(BankSector.L)
         Statistics.firmsB.append(BankSector.B)
         Statistics.firmsNum.append(len(Status.firms))
         Statistics.rate.append(BankSector.getAverageRate())
@@ -217,6 +223,7 @@ def removeBankruptedFirms():
 def addFirms(Nentry):
     for i in range(Nentry):
         Status.firms.append(Firm())
+        Statistics.firmsNEntry.append(Nentry)
     Statistics.log("        - add %d new firms (Nentry)" % Nentry)
 
 
@@ -243,9 +250,7 @@ def updateFirms():
         firm.L = firm.determineCredit()
         totalL += firm.L
         firm.r = firm.determineInterestRate()
-        kantes = firm.K
         firm.K = firm.determineCapital()
-        # Statistics.log("firm%d. K=%f > K=%f" % (firm.id, kantes, firm.K))
 
         totalK += firm.K
         firm.u = firm.determineU()
@@ -292,6 +297,7 @@ def doSimulation(doDebug=False):
 
         if doDebug and (doDebug == t or doDebug == -1):
             set_trace()
+    Statistics.getStatistics()
 
 
 def plot_zipf_density(show=True):
@@ -469,6 +475,7 @@ def plot_growth_rate(show):
 
 
 def plot_qq_firms_k(show):
+    import statsmodels.api as sm
     plt.clf()
     fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(6, 4))
     sm.qqplot(
@@ -493,6 +500,7 @@ def plot_qq_firms_k(show):
 
 
 def plot_qq(show):
+    import statsmodels.api as sm
     plt.clf()
     fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(10, 4))
     sm.qqplot(
@@ -549,38 +557,101 @@ def show_figures(show):
     plot_baddebt(show)
     plot_bankrupcies(show)
     plot_interest_rate(show)
-    plot_qq_firms_k(show)
-    plot_qq(show)
     plot_distribution_kl(show)
 
+
+def _config_description_():
+    description = sys.argv[0]
+    for attr in dir(Config):
+        value = getattr(Config, attr)
+        if isinstance(value, int) or isinstance(value, float):
+            description += f" {attr}={value}  "
+    return description
+
+def save_results(filename):
+    filename = os.path.basename(filename).rsplit('.', 1)[0]
+    with open(f"{OUTPUT_DIRECTORY}\\{filename}.inp", 'w', encoding="utf-8") as script:
+        script.write(f"open {filename}.csv\n")
+        script.write("setobs 1 1 --special-time-series\n")
+        script.write(f"gnuplot firmsK --time-series --with-lines --output=display\n")
+    with open(f"{OUTPUT_DIRECTORY}\\{filename}.csv", 'w', encoding="utf-8") as results:
+        results.write(f"# {_config_description_()}\n")
+        results.write(f"  t{'firmsNum':>15}")
+        results.write(f"{'firmsNEntry':>15}")
+        results.write(f"{'bankruptcy':>15}")
+        results.write(f"{'firmsK':>15}")
+        results.write(f"{'firmsL':>15}")
+        results.write(f"{'firmsB':>15}")
+        results.write(f"{'firmsπ':>15}")
+        results.write(f"{'rate':>10}")
+        results.write(f"{'bankL':>15}")
+        results.write(f"{'bankπ':>15}")
+        results.write(f"\n")
+        for i in range(Config.T):
+            line = f"{i:>3}"
+            line += f"{Statistics.firmsNum[i]:15.2f}"
+            line += f"{Statistics.firmsNEntry[i]:15.2f}"
+            line += f"{Statistics.bankruptcy[i]:15.2f}"
+            line += f"{Statistics.firmsK[i]:15.2f}"
+            line += f"{Statistics.firmsL[i]:15.2f}"
+            line += f"{Statistics.firmsB[i]:15.2f}"
+            line += f"{Statistics.firmsπ[i]:15.2f}"
+            line += f"{Statistics.rate[i]:10.4f}"
+            line += f"{Statistics.bankL[i]:15.2f}"
+            line += f"{Statistics.bankπ[i]:15.2f}"
+            results.write(f"{line}\n")
 
 # %%
 
 def doInteractive():
     parser = argparse.ArgumentParser(description="Fluctuations firms/banks")
     parser.add_argument("--plot", action="store_true", help="Shows the plots")
-    parser.add_argument("--sizeparam", type=int, help="Size parameter (default=%s)" % Config.Ñ)
-    parser.add_argument("--saveplot", action="store_true", help="Save the plots in dir '" + OUTPUT_DIRECTORY+"'")
-    parser.add_argument("--log", action="store_true", help="Log (stdout default)")
-    parser.add_argument("--logfile", type=str, help="Log to file in directory '" + OUTPUT_DIRECTORY+"'")
-    parser.add_argument("--debug", help="Do a debug session at t=X, default each t", type=int, const=-1, nargs='?')
+    parser.add_argument("--sizeparam", type=int, default=Config.Ñ,
+                        help="Size parameter (default=%s)" % Config.Ñ)
+    parser.add_argument("--saveplot", action="store_true", 
+                        help="Save the plots in dir '" + OUTPUT_DIRECTORY+"'")
+    parser.add_argument("--save", type=str,
+                        help="Save the data in csv/inp in '" + OUTPUT_DIRECTORY+"'")
+    parser.add_argument("--log", action="store_true", 
+                        help="Log (stdout default)")
+    parser.add_argument("--t", type=int, default=None,help="Number of steps")
+    parser.add_argument("--n", type=int, default=None,help="Number of firms")
+    parser.add_argument("--logfile", type=str,
+                        help="Log to file in directory '" + 
+                        OUTPUT_DIRECTORY+"'")
+    parser.add_argument("--debug", 
+                        help="Do a debug session at t=X, default each t",
+                        type=int, const=-1, nargs='?')
     args = parser.parse_args()
 
     if args.sizeparam:
         Config.Ñ = int(args.sizeparam)
         if Config.Ñ < 0 or Config.Ñ > Config.N:
             print("value not valid for Ñ: must be 0..%s" % Config.N)
-
+            sys.exit(-1)
+    if args.n:
+        Config.N = args.n
+        if Config.N < 0:
+            print("value not valid for N: must be >0")
+            sys.exit(-1)
+    if args.t:
+        Config.T = args.t
+        if Config.T < 0:
+            print("value not valid for T: must be >0")
+            sys.exit(-1)
+                
     if args.log or args.logfile:
         Statistics.enableLog(args.logfile)
 
     doSimulation(args.debug)
     if Status.numFailuresGlobal > 0:
-        Statistics.log("[total failures in all times = %s " % Status.numFailuresGlobal)
+        Statistics.log("[total failures in all times = %s]" % Status.numFailuresGlobal)
     else:
         Statistics.log("[no failures]")
     if args.plot:
         show_figures(True)
+    if args.save:
+        save_results(args.save)
     if args.saveplot:
         show_figures(False)
 
