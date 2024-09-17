@@ -8,18 +8,17 @@ import random
 from pdb import set_trace
 import pandas as pd
 import numpy as np
-from scipy import stats
 import matplotlib.pyplot as plt
 
-random.seed(40579)
+random.seed(10579)
 
 OUTPUT_DIRECTORY = "output"
 
 
 class Config:
     T = 1000  # time (1000)
-    N = 10000  # number of firms
-    Ñ = 180  # size parameter
+    N = 100  # number of firms
+    Ñ = 1   # size parameter
 
     φ = 0.1  # capital productivity (constant and uniform)
     c = 1  # parameter bankruptcy cost equation
@@ -40,16 +39,38 @@ class Config:
     # risk coefficient for bank sector (Basel)
     v = 0.2
 
+    allowNewEntry = False
+
 
 # %%
 class Statistics:
     doLog = False
     logfile = None
 
+    @staticmethod
+    def determineGuru(firms):
+        r_max = 0
+        A_max = 0
+        idR_max = -1
+        idA_max = -1
+        sum_r = 0.0
+        for firm in firms:
+            sum_r += firm.r
+            if firm.r > r_max:
+                idR_max = firm.id
+                r_max = firm.r
+            if firm.A > A_max:
+                idA_max = firm.id
+                A_max = firm.A
+        avg_r_without_guru = (sum_r-r_max)/(len(firms)-1)
+        num_igual_r = 0
+        for firm in firms:
+            if firm.r == r_max:
+                num_igual_r += 1
+        return idA_max, idR_max, r_max, avg_r_without_guru, num_igual_r
+
     def enableLog(logfile: str = None):
         if logfile:
-            if not os.path.exists(OUTPUT_DIRECTORY):
-                os.mkdir(OUTPUT_DIRECTORY)
             Statistics.logfile = open(OUTPUT_DIRECTORY + "/" + logfile, 'w', encoding="utf-8")
         Statistics.doLog = True
 
@@ -74,6 +95,18 @@ class Statistics:
     bankL = []
     bankπ = []
 
+    max_A = 0
+
+
+    matrix_Ar_A = []
+    matrix_Ar_r = []
+
+    guruA = []
+    guruR = []
+    guruA_r = []
+    without_guruA_r = []
+    num_igual_r = []
+
     @staticmethod
     def getStatistics():
         Statistics.log("t=%4s [firms] n=%s,sumA=%.2f,sumL=%.2f,sumK=%.2f,sumπ=%2.f" % (Status.t, len(Status.firms),
@@ -93,6 +126,18 @@ class Statistics:
         Statistics.bankB.append(BankSector.B)
         Statistics.firmsNum.append(len(Status.firms))
         Statistics.rate.append(BankSector.getAverageRate())
+        guruA, guruR, r_max, r_without_guru, num_igual_r = Statistics.determineGuru(Status.firms)
+        Statistics.guruA.append(guruA)
+        Statistics.guruR.append(guruR)
+        Statistics.guruA_r.append(r_max)
+        Statistics.num_igual_r.append(num_igual_r)
+        Statistics.without_guruA_r.append(r_without_guru)
+
+        for firm in Status.firms:
+                Statistics.matrix_Ar_A.append(firm.A)
+                Statistics.matrix_Ar_r.append(firm.r)
+                if firm.A > Statistics.max_A:
+                    Statistics.max_A = firm.A
 
 
 class Status:
@@ -243,6 +288,29 @@ def updateFirmsStatus():
             Status.t - 1])
 
 
+def updateFirms_intento():
+    totalK = 0.0
+    totalL = 0.0
+    Status.firmsπsum = 0.0
+    i = len(Status.firms)-1
+    while i>=0:
+        Status.firms[i].L = Status.firms[i].determineCredit()
+        totalL += Status.firms[i].L
+        Status.firms[i].r = Status.firms[i].determineInterestRate()
+        Status.firms[i].K = Status.firms[i].determineCapital()
+
+        totalK += Status.firms[i].K
+        Status.firms[i].u = Status.firms[i].determineU()
+
+        Status.firms[i].π = Status.firms[i].determineProfit()
+        Status.firms[i].A = Status.firms[i].determineAssets()
+        Status.firmsπsum += Status.firms[i].π
+        i -= 1
+    # update Kt-1 and At-1 (Status.firmsKsum && Status.firmsAsum):
+    updateFirmsStatus()
+    # Statistics.log("  K:%s L:%s pi:%s" % (totalK,totalL,Status.firmsπsum) )
+    # code.interact(local=locals())
+
 def updateFirms():
     totalK = 0.0
     totalL = 0.0
@@ -288,17 +356,18 @@ def doSimulation(doDebug=False):
     BankSector.D = BankSector.L - BankSector.E
     for t in range(Config.T):
         Status.t = t
-        Statistics.getStatistics()
-        removeBankruptedFirms()
-        newFirmsNumber = determineNentry()
+        numFailed = removeBankruptedFirms()
+        newFirmsNumber = determineNentry() if Config.allowNewEntry else numFailed
         addFirms(newFirmsNumber)
         updateBankL()
         updateFirms()
         updateBankSector()
-
         if doDebug and (doDebug == t or doDebug == -1):
             set_trace()
-    Statistics.getStatistics()
+        Statistics.getStatistics()
+
+
+
 
 
 def plot_zipf_density(show=True):
@@ -381,6 +450,90 @@ def plot_aggregate_output(show=True):
     plt.xlabel("t")
     plt.title("Logarithm of aggregate output")
     plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/aggregate_output.svg")
+
+
+def plot_scatter_Ar(show=True):
+    Statistics.log("scatter_data")
+    plt.clf()
+    plt.ylabel("r")
+    plt.xlabel("A")
+    plt.title("rxA")
+    plt.scatter(Statistics.matrix_Ar_A,Statistics.matrix_Ar_r)
+    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/matrix.svg")
+
+
+def plot_distribution_A(show=True):
+    plt.clf()
+    plt.hist(Statistics.firmsK, bins=20)
+    #plt.plot(Statistics.matrix_Ar_A, np.full_like(Statistics.matrix_Ar_A, -0.01), '|k', markeredgewidth=1)
+    plt.title('FirmsA distribution')
+    plt.xlabel('FirmsA')
+    plt.ylabel('counts')
+    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/distribution_A.svg")
+
+
+def plot_guruA(show=True):
+    Statistics.log("guru_data")
+    plt.clf()
+    yy = []
+    for i in range(Config.T):
+        yy.append(i)
+    plt.plot(yy, Statistics.guruA, 'b-')
+    plt.plot(yy, Statistics.guruA_r, 'r-')
+    plt.plot(yy, Statistics.without_guruA_r, 'g-')
+    plt.ylabel("id_firm")
+    plt.xlabel("t")
+    plt.title("GuruA")
+    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/guruA.svg")
+
+
+def plot_guruR(show=True):
+    Statistics.log("guru_data")
+    plt.clf()
+    plt.figure(figsize=(12, 8))
+    yy = []
+    for i in range(Config.T):
+        yy.append(i)
+
+    color = 'tab:red'
+    fig, ax1 = plt.subplots(figsize=(12, 8))
+    ax1.set_xlabel('t')
+    ax1.set_ylabel('id_guru', color=color)
+    ax1.plot(yy, Statistics.guruR, color=color, label="guruA_id")
+    ax1.tick_params(axis='y', labelcolor=color)
+
+    ax2 = ax1.twinx()  # instantiate a second Axes that shares the same x-axis
+
+    color = 'tab:blue'
+    ax2.set_ylabel('r y r_without_guru', color=color)  # we already handled the x-label with ax1
+    ax2.plot(yy, Statistics.guruA_r, color=color, label="r of guruA")
+    ax2.plot(yy, Statistics.without_guruA_r, color='tab:green', label="r of others")
+    ax2.tick_params(axis='y', labelcolor=color)
+    fig.tight_layout()  # otherwise the right y-label is slightly clipped
+    ax1.legend(loc=0)
+    ax2.legend(loc=1)
+    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/gurur1.pdf")
+
+    plt.clf()
+    plt.figure(figsize=(12, 8))
+    color = 'tab:red'
+    fig, ax1 = plt.subplots(figsize=(12, 8))
+    ax1.set_xlabel('t')
+    ax1.set_ylabel('id_guru', color=color)
+    ax1.plot(yy, Statistics.guruR, color=color, label="guruA_id")
+    ax1.tick_params(axis='y', labelcolor=color)
+
+    ax2 = ax1.twinx()  # instantiate a second Axes that shares the same x-axis
+
+    color = 'tab:blue'
+    ax2.set_ylabel('num same r', color=color)  # we already handled the x-label with ax1
+    ax2.plot(yy, Statistics.num_igual_r, color=color, label="same R")
+    ax2.tick_params(axis='y', labelcolor=color)
+    fig.tight_layout()  # otherwise the right y-label is slightly clipped
+    ax1.legend(loc=0)
+    ax2.legend(loc=1)
+    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/gurur2.pdf")
+
 
 
 def plot_profits(show=True):
@@ -475,58 +628,6 @@ def plot_growth_rate(show):
     plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/growth_rates.svg")
 
 
-def plot_qq_firms_k(show):
-    import statsmodels.api as sm
-    plt.clf()
-    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(6, 4))
-    sm.qqplot(
-        np.log(pd.DataFrame(Statistics.firmsK, columns=['K'])),
-        fit=True,
-        line='q',
-        alpha=0.4,
-        lw=2,
-        ax=ax
-    )
-    ax.set_title('Chart Q-Q log(firmsK)', fontsize=13)
-    ax.tick_params(labelsize=7)
-    shapiro_test = stats.shapiro(np.log(pd.DataFrame(Statistics.firmsK, columns=['K'])))
-    if is_notebook():
-        print(f"Variable height: {shapiro_test}")
-    correlation = pd.DataFrame(zip(Statistics.firmsK, Statistics.firmsL), columns=['K', 'L'])
-    if is_notebook():
-        print('Coef Pearson:\n', correlation.corr(method='pearson'))
-        print('\nCoef Spearman:\n', correlation.corr(method='spearman'))
-        print('\nCoef Kendall:\n', correlation.corr(method='kendall'))
-    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/qq_firmsk.svg")
-
-
-def plot_qq(show):
-    import statsmodels.api as sm
-    plt.clf()
-    fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(10, 4))
-    sm.qqplot(
-        pd.DataFrame(Statistics.firmsK, columns=['K']),
-        fit=True,
-        line='q',
-        alpha=0.4,
-        lw=2,
-        ax=axs[0]
-    )
-    axs[0].set_title('Chart Q-Q firmsK', fontsize=10, fontweight="bold")
-    axs[0].tick_params(labelsize=7)
-    sm.qqplot(
-        pd.DataFrame(Statistics.bankruptcy, columns=['Bankrupcies']),
-        fit=True,
-        line='q',
-        alpha=0.4,
-        lw=2,
-        ax=axs[1]
-    )
-    axs[1].set_title('Chart Q-Q Bankruptcies', fontsize=10, fontweight="bold")
-    axs[1].tick_params(labelsize=7)
-    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/qq.svg")
-
-
 def plot_distribution_kl(show):
     plt.clf()
     fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(10, 4))
@@ -548,6 +649,10 @@ def plot_distribution_kl(show):
 
 
 def show_figures(show):
+    plot_distribution_A(show)
+    plot_scatter_Ar(show)
+    plot_guruR(show)
+    plot_guruA(show)
     plot_aggregate_output(show)
     plot_growth_rate(show)
     plot_zipf_rank(show)
@@ -603,6 +708,10 @@ def save_results(filename):
         results.write(f"{'bankL':>15}")
         results.write(f"{'bankB':>15}")
         results.write(f"{'bankProfit':>15}")
+        results.write(f"{'guruA':>15}")
+        results.write(f"{'guruR':>15}")
+        results.write(f"{'guruA_r':>15}")
+        results.write(f"{'resto_r':>15}")
         results.write(f"\n")
         for i in range(Config.T):
             line = f"{i:>3}"
@@ -616,12 +725,18 @@ def save_results(filename):
             line += f"{Statistics.bankL[i]:15.2f}"
             line += f"{Statistics.bankB[i]:15.2f}"
             line += f"{Statistics.bankπ[i]:15.2f}"
+            line += f"{Statistics.guruA[i]:15.2f}"
+            line += f"{Statistics.guruR[i]:15.2f}"
+            line += f"{Statistics.guruA_r[i]:15.2f}"
+            line += f"{Statistics.without_guruA_r[i]:15.2f}"
             results.write(f"{line}\n")
 
 # %%
 
 def doInteractive():
+    global OUTPUT_DIRECTORY
     parser = argparse.ArgumentParser(description="Fluctuations firms/banks")
+    parser.add_argument("--output", type=str, default=OUTPUT_DIRECTORY, help="Directory to store results")
     parser.add_argument("--plot", action="store_true", help="Shows the plots")
     parser.add_argument("--sizeparam", type=int, default=Config.Ñ,
                         help="Size parameter (default=%s)" % Config.Ñ)
@@ -640,6 +755,12 @@ def doInteractive():
                         help="Do a debug session at t=X, default each t",
                         type=int, const=-1, nargs='?')
     args = parser.parse_args()
+
+    if args.output and args.output != OUTPUT_DIRECTORY:
+        OUTPUT_DIRECTORY = args.output
+
+    if not os.path.exists(OUTPUT_DIRECTORY):
+        os.mkdir(OUTPUT_DIRECTORY)
 
     if args.sizeparam:
         Config.Ñ = int(args.sizeparam)
@@ -667,10 +788,11 @@ def doInteractive():
         Statistics.log("[no failures]")
     if args.plot:
         show_figures(True)
+    else:
+        if args.saveplot:
+            show_figures(False)
     if args.save:
         save_results(args.save)
-    if args.saveplot:
-        show_figures(False)
 
 
 def is_notebook():
