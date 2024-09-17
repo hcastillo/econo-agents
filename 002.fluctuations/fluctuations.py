@@ -10,7 +10,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-random.seed(10579)
+random.seed(40579)
 
 OUTPUT_DIRECTORY = "output"
 
@@ -21,7 +21,7 @@ class Config:
     Ñ = 1   # size parameter
 
     φ = 0.1  # capital productivity (constant and uniform)
-    c = 1  # parameter bankruptcy cost equation
+    c = 1    # parameter bankruptcy cost equation
     α = 0.08  # alpha, ratio equity-loan
     g = 1.1  # variable cost
     ω = 0.002  # markdown interest rate (the higher it is, the monopolistic power of banks)
@@ -48,26 +48,14 @@ class Statistics:
     logfile = None
 
     @staticmethod
-    def determineGuru(firms):
-        r_max = 0
+    def determine_best_networth_firm(firms):
         A_max = 0
-        idR_max = -1
-        idA_max = -1
-        sum_r = 0.0
+        firm_with_best_networth = None
         for firm in firms:
-            sum_r += firm.r
-            if firm.r > r_max:
-                idR_max = firm.id
-                r_max = firm.r
             if firm.A > A_max:
-                idA_max = firm.id
+                firm_with_best_networth = firm
                 A_max = firm.A
-        avg_r_without_guru = (sum_r-r_max)/(len(firms)-1)
-        num_igual_r = 0
-        for firm in firms:
-            if firm.r == r_max:
-                num_igual_r += 1
-        return idA_max, idR_max, r_max, avg_r_without_guru, num_igual_r
+        return firm_with_best_networth
 
     def enableLog(logfile: str = None):
         if logfile:
@@ -87,6 +75,8 @@ class Statistics:
     bankruptcy = []
     firmsK = []
     firmsπ = []
+    firmsA = []
+    best_networth_A_percentage = []
     firmsL = []
     bankB = []
     firmsNum = []
@@ -101,10 +91,9 @@ class Statistics:
     matrix_Ar_A = []
     matrix_Ar_r = []
 
-    guruA = []
-    guruR = []
-    guruA_r = []
-    without_guruA_r = []
+    best_networth_rate = []
+    best_networth_firm = []
+    rate_without_best_networth = []
     num_igual_r = []
 
     @staticmethod
@@ -121,23 +110,26 @@ class Statistics:
         Statistics.firmsK.append(Status.firmsKsum)
         Statistics.firmsπ.append(Status.firmsπsum)
         Statistics.firmsL.append(Status.firmsLsum)
+        Statistics.firmsA.append(Status.firmsAsum)
         Statistics.bankπ.append(BankSector.π)
         Statistics.bankL.append(BankSector.L)
         Statistics.bankB.append(BankSector.B)
         Statistics.firmsNum.append(len(Status.firms))
         Statistics.rate.append(BankSector.getAverageRate())
-        guruA, guruR, r_max, r_without_guru, num_igual_r = Statistics.determineGuru(Status.firms)
-        Statistics.guruA.append(guruA)
-        Statistics.guruR.append(guruR)
-        Statistics.guruA_r.append(r_max)
-        Statistics.num_igual_r.append(num_igual_r)
-        Statistics.without_guruA_r.append(r_without_guru)
 
+        best_networth_firm = Statistics.determine_best_networth_firm(Status.firms)
+        Statistics.best_networth_firm.append(best_networth_firm.id)
+        Statistics.best_networth_rate.append(best_networth_firm.r)
+        Statistics.best_networth_A_percentage.append(best_networth_firm.A / Status.firmsAsum)
+        r_without_best_networth_firm = 0
+        for firm in Status.firms:
+            if firm.id != best_networth_firm.id:
+                r_without_best_networth_firm += firm.r
+        Statistics.rate_without_best_networth.append(r_without_best_networth_firm/(len(Status.firms)-1))
+        # to estimate later a matrix of Axr:
         for firm in Status.firms:
                 Statistics.matrix_Ar_A.append(firm.A)
                 Statistics.matrix_Ar_r.append(firm.r)
-                if firm.A > Statistics.max_A:
-                    Statistics.max_A = firm.A
 
 
 class Status:
@@ -453,42 +445,24 @@ def plot_aggregate_output(show=True):
 
 
 def plot_scatter_Ar(show=True):
-    Statistics.log("scatter_data")
     plt.clf()
     plt.ylabel("r")
     plt.xlabel("A")
     plt.title("rxA")
     plt.scatter(Statistics.matrix_Ar_A,Statistics.matrix_Ar_r)
-    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/matrix.svg")
+    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/matrix.pdf")
 
 
-def plot_distribution_A(show=True):
+def plot_histogram_equity(show=True):
     plt.clf()
-    plt.hist(Statistics.firmsK, bins=20)
-    #plt.plot(Statistics.matrix_Ar_A, np.full_like(Statistics.matrix_Ar_A, -0.01), '|k', markeredgewidth=1)
+    plt.hist(Statistics.matrix_Ar_A, bins=20, log=True)
     plt.title('FirmsA distribution')
     plt.xlabel('FirmsA')
-    plt.ylabel('counts')
-    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/distribution_A.svg")
+    plt.ylabel('log counts')
+    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/histogram_equity.pdf")
 
 
-def plot_guruA(show=True):
-    Statistics.log("guru_data")
-    plt.clf()
-    yy = []
-    for i in range(Config.T):
-        yy.append(i)
-    plt.plot(yy, Statistics.guruA, 'b-')
-    plt.plot(yy, Statistics.guruA_r, 'r-')
-    plt.plot(yy, Statistics.without_guruA_r, 'g-')
-    plt.ylabel("id_firm")
-    plt.xlabel("t")
-    plt.title("GuruA")
-    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/guruA.svg")
-
-
-def plot_guruR(show=True):
-    Statistics.log("guru_data")
+def plot_percentage_equity(show=True):
     plt.clf()
     plt.figure(figsize=(12, 8))
     yy = []
@@ -498,42 +472,76 @@ def plot_guruR(show=True):
     color = 'tab:red'
     fig, ax1 = plt.subplots(figsize=(12, 8))
     ax1.set_xlabel('t')
-    ax1.set_ylabel('id_guru', color=color)
-    ax1.plot(yy, Statistics.guruR, color=color, label="guruA_id")
+    ax1.set_ylabel('∑A', color=color)
+    ax1.plot(yy, Statistics.firmsA, color=color, label="sum of firms A")
     ax1.tick_params(axis='y', labelcolor=color)
 
     ax2 = ax1.twinx()  # instantiate a second Axes that shares the same x-axis
 
     color = 'tab:blue'
-    ax2.set_ylabel('r y r_without_guru', color=color)  # we already handled the x-label with ax1
-    ax2.plot(yy, Statistics.guruA_r, color=color, label="r of guruA")
-    ax2.plot(yy, Statistics.without_guruA_r, color='tab:green', label="r of others")
+    ax2.set_ylabel('%', color=color)  # we already handled the x-label with ax1
+    ax2.plot(yy, Statistics.best_networth_A_percentage, color=color, label="% of A of best networth")
     ax2.tick_params(axis='y', labelcolor=color)
     fig.tight_layout()  # otherwise the right y-label is slightly clipped
     ax1.legend(loc=0)
     ax2.legend(loc=1)
-    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/gurur1.pdf")
+    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/percentage_networth.pdf")
 
+
+
+# def plot_guru_equity(show=True):
+#     Statistics.log("guru_equity")
+#     plt.clf()
+#     yy = []
+#     for i in range(Config.T):
+#         yy.append(i)
+#     plt.plot(yy, Statistics.guru_equity, 'b-')
+#     plt.plot(yy, Statistics.firmsL, 'b-')
+#     plt.ylabel("id_firm")
+#     plt.xlabel("t")
+#     plt.title("GuruA")
+#     plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/guruA.svg")
+#
+# def plot_guruA(show=True):
+#     Statistics.log("guru_data")
+#     plt.clf()
+#     yy = []
+#     for i in range(Config.T):
+#         yy.append(i)
+#     plt.plot(yy, Statistics.guruA, 'b-')
+#     plt.plot(yy, Statistics.guruA_r, 'r-')
+#     plt.plot(yy, Statistics.rate_without_best_networth, 'g-')
+#     plt.ylabel("id_firm")
+#     plt.xlabel("t")
+#     plt.title("GuruA")
+#     plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/guruA.svg")
+
+
+def plot_best_networth_rate(show=True):
     plt.clf()
     plt.figure(figsize=(12, 8))
+    yy = []
+    for i in range(Config.T):
+        yy.append(i)
+
     color = 'tab:red'
     fig, ax1 = plt.subplots(figsize=(12, 8))
     ax1.set_xlabel('t')
-    ax1.set_ylabel('id_guru', color=color)
-    ax1.plot(yy, Statistics.guruR, color=color, label="guruA_id")
+    ax1.set_ylabel('id', color=color)
+    ax1.plot(yy, Statistics.best_networth_firm, color=color, label="id best networth")
     ax1.tick_params(axis='y', labelcolor=color)
 
     ax2 = ax1.twinx()  # instantiate a second Axes that shares the same x-axis
 
     color = 'tab:blue'
-    ax2.set_ylabel('num same r', color=color)  # we already handled the x-label with ax1
-    ax2.plot(yy, Statistics.num_igual_r, color=color, label="same R")
+    ax2.set_ylabel('rate', color=color)  # we already handled the x-label with ax1
+    ax2.plot(yy, Statistics.best_networth_rate, color=color, label="r of best networth")
+    ax2.plot(yy, Statistics.rate_without_best_networth, color='tab:green', label="r of others")
     ax2.tick_params(axis='y', labelcolor=color)
     fig.tight_layout()  # otherwise the right y-label is slightly clipped
     ax1.legend(loc=0)
     ax2.legend(loc=1)
-    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/gurur2.pdf")
-
+    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/best_networth.pdf")
 
 
 def plot_profits(show=True):
@@ -649,10 +657,10 @@ def plot_distribution_kl(show):
 
 
 def show_figures(show):
-    plot_distribution_A(show)
+    plot_histogram_equity(show)
     plot_scatter_Ar(show)
-    plot_guruR(show)
-    plot_guruA(show)
+    plot_best_networth_rate(show)
+    plot_percentage_equity(show)
     plot_aggregate_output(show)
     plot_growth_rate(show)
     plot_zipf_rank(show)
@@ -726,9 +734,9 @@ def save_results(filename):
             line += f"{Statistics.bankB[i]:15.2f}"
             line += f"{Statistics.bankπ[i]:15.2f}"
             line += f"{Statistics.guruA[i]:15.2f}"
-            line += f"{Statistics.guruR[i]:15.2f}"
+            line += f"{Statistics.best_networth_rate[i]:15.2f}"
             line += f"{Statistics.guruA_r[i]:15.2f}"
-            line += f"{Statistics.without_guruA_r[i]:15.2f}"
+            line += f"{Statistics.rate_without_best_networth[i]:15.2f}"
             results.write(f"{line}\n")
 
 # %%
