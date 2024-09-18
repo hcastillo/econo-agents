@@ -9,19 +9,19 @@ from pdb import set_trace
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from progress.bar import Bar
 
 random.seed(40579)
-
 OUTPUT_DIRECTORY = "output"
 
 
 class Config:
     T = 1000  # time (1000)
     N = 100  # number of firms
-    Ñ = 1   # size parameter
+    Ñ = 1  # size parameter
 
     φ = 0.1  # capital productivity (constant and uniform)
-    c = 1    # parameter bankruptcy cost equation
+    c = 1  # parameter bankruptcy cost equation
     α = 0.08  # alpha, ratio equity-loan
     g = 1.1  # variable cost
     ω = 0.002  # markdown interest rate (the higher it is, the monopolistic power of banks)
@@ -39,6 +39,8 @@ class Config:
     # risk coefficient for bank sector (Basel)
     v = 0.2
 
+    # if True, new firms are created using formula of paper, if not, same N number of firms is sustained in time
+    # the same are failed, the same are introduced:
     allowNewEntry = False
 
 
@@ -57,11 +59,13 @@ class Statistics:
                 A_max = firm.A
         return firm_with_best_networth
 
+    @staticmethod
     def enableLog(logfile: str = None):
         if logfile:
             Statistics.logfile = open(OUTPUT_DIRECTORY + "/" + logfile, 'w', encoding="utf-8")
         Statistics.doLog = True
 
+    @staticmethod
     def log(cadena):
         if Statistics.doLog:
             if Statistics.logfile:
@@ -86,7 +90,6 @@ class Statistics:
     bankπ = []
 
     max_A = 0
-
 
     matrix_Ar_A = []
     matrix_Ar_r = []
@@ -125,11 +128,11 @@ class Statistics:
         for firm in Status.firms:
             if firm.id != best_networth_firm.id:
                 r_without_best_networth_firm += firm.r
-        Statistics.rate_without_best_networth.append(r_without_best_networth_firm/(len(Status.firms)-1))
+        Statistics.rate_without_best_networth.append(r_without_best_networth_firm / (len(Status.firms) - 1))
         # to estimate later a matrix of Axr:
         for firm in Status.firms:
-                Statistics.matrix_Ar_A.append(firm.A)
-                Statistics.matrix_Ar_r.append(firm.r)
+            Statistics.matrix_Ar_A.append(firm.A)
+            Statistics.matrix_Ar_r.append(firm.r)
 
 
 class Status:
@@ -157,7 +160,7 @@ class Status:
             Status.firms.append(Firm())
 
 
-class Firm():
+class Firm:
     K = Config.K_i0  # capital
     A = Config.A_i0  # asset
     r = 0.0  # rate money is given by banksector
@@ -171,7 +174,7 @@ class Firm():
     def determineCredit(self):
         # (equation 11)
         result = Config.λ * BankSector.L * self.K / Status.firmsKsum + (
-                    1 - Config.λ) * BankSector.L * self.A / Status.firmsAsum
+                1 - Config.λ) * BankSector.L * self.A / Status.firmsAsum
         ## Statistics.log( "a*%s*%s/%s+(1-a)*%s*%s/%s  L=%s" % (BankSector.L,self.K,Status.firmsKsum,BankSector.L,self.A,Status.firmsAsum,result))
         return result
 
@@ -179,7 +182,7 @@ class Firm():
         # (equation 12)
         return (2 + self.A) / (2 * Config.c * Config.g * (1 / (Config.c * Config.φ) + self.π + self.A) +
                                2 * Config.c * Config.g * BankSector.L * (
-                                           Config.λ * self.__ratioK() + (1 - Config.λ) * self.__ratioA()))
+                                       Config.λ * self.__ratioK() + (1 - Config.λ) * self.__ratioA()))
 
     def __ratioK(self):
         return self.K / Status.firmsKsum
@@ -190,7 +193,7 @@ class Firm():
     def determineCapital(self):
         # equation 9
         return (Config.φ - Config.g * self.r) / (Config.c * Config.φ * Config.g * self.r) + (
-                    self.A / (2 * Config.g * self.r))
+                self.A / (2 * Config.g * self.r))
 
     def determineU(self):
         return random.random() * 2
@@ -206,7 +209,7 @@ class Firm():
         return result
 
 
-class BankSector():
+class BankSector:
     E = Config.N * Config.L_i0 * Config.v
     B = Config.B_i0  # bad debt
     D = 0
@@ -280,29 +283,6 @@ def updateFirmsStatus():
             Status.t - 1])
 
 
-def updateFirms_intento():
-    totalK = 0.0
-    totalL = 0.0
-    Status.firmsπsum = 0.0
-    i = len(Status.firms)-1
-    while i>=0:
-        Status.firms[i].L = Status.firms[i].determineCredit()
-        totalL += Status.firms[i].L
-        Status.firms[i].r = Status.firms[i].determineInterestRate()
-        Status.firms[i].K = Status.firms[i].determineCapital()
-
-        totalK += Status.firms[i].K
-        Status.firms[i].u = Status.firms[i].determineU()
-
-        Status.firms[i].π = Status.firms[i].determineProfit()
-        Status.firms[i].A = Status.firms[i].determineAssets()
-        Status.firmsπsum += Status.firms[i].π
-        i -= 1
-    # update Kt-1 and At-1 (Status.firmsKsum && Status.firmsAsum):
-    updateFirmsStatus()
-    # Statistics.log("  K:%s L:%s pi:%s" % (totalK,totalL,Status.firmsπsum) )
-    # code.interact(local=locals())
-
 def updateFirms():
     totalK = 0.0
     totalL = 0.0
@@ -341,11 +321,14 @@ def updateBankSector():
 
 
 # %%
-def doSimulation(doDebug=False):
+def doSimulation(doDebug=False, interactive=False):
     Status.initialize()
     updateFirmsStatus()
     updateBankL()
     BankSector.D = BankSector.L - BankSector.E
+    progress_bar = Bar("Executing model", max=Config.T) if interactive and not doDebug else None
+    if progress_bar:
+        progress_bar.update()
     for t in range(Config.T):
         Status.t = t
         numFailed = removeBankruptedFirms()
@@ -357,338 +340,321 @@ def doSimulation(doDebug=False):
         if doDebug and (doDebug == t or doDebug == -1):
             set_trace()
         Statistics.getStatistics()
+        if progress_bar:
+            progress_bar.next()
+    if progress_bar:
+        progress_bar.finish()
 
 
-
-
-
-def plot_zipf_density(show=True):
-    Statistics.log("zipf_density")
-    plt.clf()
-    zipf = {}  # log K = freq
-    for firm in Status.firms:
-        if round(firm.K) > 0:
-            x = math.log(round(firm.K))
-            if x in zipf:
-                zipf[x] += 1
-            else:
-                zipf[x] = 1
-    x = []
-    y = []
-    for i in zipf:
-        x.append(i)
-        y.append(math.log(zipf[i]))
-    plt.plot(x, y, 'o', color="blue")
-    plt.ylabel("log freq")
-    plt.xlabel("log K")
-    plt.title("Zipf plot of firm sizes")
-    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/zipf_density.svg")
-
-
-# %%
-def plot_zipf_density1(show=True):
-    Statistics.log("zipf_density")
-    plt.clf()
-    zipf = {}  # log K = freq
-    for firm in Status.firms:
-        if round(firm.K) > 0:
-            x = math.log(round(firm.K))
-            if x in zipf:
-                zipf[x] += 1
-            else:
-                zipf[x] = 1
-    x = []
-    y = []
-    for i in zipf:
-        if math.log(zipf[i]) >= 1:
+class Plots:
+    def plot_zipf_density(show=True):
+        Statistics.log("zipf_density")
+        plt.clf()
+        zipf = {}  # log K = freq
+        for firm in Status.firms:
+            if round(firm.K) > 0:
+                x = math.log(round(firm.K))
+                if x in zipf:
+                    zipf[x] += 1
+                else:
+                    zipf[x] = 1
+        x = []
+        y = []
+        for i in zipf:
             x.append(i)
             y.append(math.log(zipf[i]))
-    plt.plot(x, y, 'o', color="blue")
-    plt.ylabel("log freq")
-    plt.xlabel("log K")
-    plt.title("Zipf plot of firm sizes (modified)")
-    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/zipf_density1.svg")
+        plt.plot(x, y, 'o', color="blue")
+        plt.ylabel("log freq")
+        plt.xlabel("log K")
+        plt.title("Zipf plot of firm sizes")
+        plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/zipf_density.svg")
 
+    # %%
+    def plot_zipf_density1(show=True):
+        Statistics.log("zipf_density")
+        plt.clf()
+        zipf = {}  # log K = freq
+        for firm in Status.firms:
+            if round(firm.K) > 0:
+                x = math.log(round(firm.K))
+                if x in zipf:
+                    zipf[x] += 1
+                else:
+                    zipf[x] = 1
+        x = []
+        y = []
+        for i in zipf:
+            if math.log(zipf[i]) >= 1:
+                x.append(i)
+                y.append(math.log(zipf[i]))
+        plt.plot(x, y, 'o', color="blue")
+        plt.ylabel("log freq")
+        plt.xlabel("log K")
+        plt.title("Zipf plot of firm sizes (modified)")
+        plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/zipf_density1.svg")
 
-def plot_zipf_rank(show=True):
-    Statistics.log("zipf_rank")
-    plt.clf()
-    y = []  # log K = freq
-    x = []
-    for firm in Status.firms:
-        if round(firm.K) > 0:
-            y.append(math.log(firm.K))
-    y.sort();
-    y.reverse()
-    for i in range(len(y)):
-        x.append(math.log(float(i + 1)))
-    plt.plot(y, x, 'o', color="blue")
-    plt.xlabel("log K")
-    plt.ylabel("log rank")
-    plt.title("Rank of K (zipf)")
-    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/zipf_rank.svg")
+    def plot_zipf_rank(show=True):
+        Statistics.log("zipf_rank")
+        plt.clf()
+        y = []  # log K = freq
+        x = []
+        for firm in Status.firms:
+            if round(firm.K) > 0:
+                y.append(math.log(firm.K))
+        y.sort();
+        y.reverse()
+        for i in range(len(y)):
+            x.append(math.log(float(i + 1)))
+        plt.plot(y, x, 'o', color="blue")
+        plt.xlabel("log K")
+        plt.ylabel("log rank")
+        plt.title("Rank of K (zipf)")
+        plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/zipf_rank.svg")
 
-
-def plot_aggregate_output(show=True):
-    Statistics.log("aggregate_output")
-    plt.clf()
-    xx1 = []
-    yy = []
-    for i in range(150, Config.T):
-        yy.append(i)
-        xx1.append(math.log(Status.firmsKsums[i]))
-    plt.plot(yy, xx1, 'b-')
-    plt.ylabel("log K")
-    plt.xlabel("t")
-    plt.title("Logarithm of aggregate output")
-    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/aggregate_output.svg")
-
-
-def plot_scatter_Ar(show=True):
-    plt.clf()
-    plt.ylabel("r")
-    plt.xlabel("A")
-    plt.title("rxA")
-    plt.scatter(Statistics.matrix_Ar_A,Statistics.matrix_Ar_r)
-    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/matrix.pdf")
-
-
-def plot_histogram_equity(show=True):
-    plt.clf()
-    plt.hist(Statistics.matrix_Ar_A, bins=20, log=True)
-    plt.title('FirmsA distribution')
-    plt.xlabel('FirmsA')
-    plt.ylabel('log counts')
-    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/histogram_equity.pdf")
-
-
-def plot_percentage_equity(show=True):
-    plt.clf()
-    plt.figure(figsize=(12, 8))
-    yy = []
-    for i in range(Config.T):
-        yy.append(i)
-
-    color = 'tab:red'
-    fig, ax1 = plt.subplots(figsize=(12, 8))
-    ax1.set_xlabel('t')
-    ax1.set_ylabel('∑A', color=color)
-    ax1.plot(yy, Statistics.firmsA, color=color, label="sum of firms A")
-    ax1.tick_params(axis='y', labelcolor=color)
-
-    ax2 = ax1.twinx()  # instantiate a second Axes that shares the same x-axis
-
-    color = 'tab:blue'
-    ax2.set_ylabel('%', color=color)  # we already handled the x-label with ax1
-    ax2.plot(yy, Statistics.best_networth_A_percentage, color=color, label="% of A of best networth")
-    ax2.tick_params(axis='y', labelcolor=color)
-    fig.tight_layout()  # otherwise the right y-label is slightly clipped
-    ax1.legend(loc=0)
-    ax2.legend(loc=1)
-    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/percentage_networth.pdf")
-
-
-
-# def plot_guru_equity(show=True):
-#     Statistics.log("guru_equity")
-#     plt.clf()
-#     yy = []
-#     for i in range(Config.T):
-#         yy.append(i)
-#     plt.plot(yy, Statistics.guru_equity, 'b-')
-#     plt.plot(yy, Statistics.firmsL, 'b-')
-#     plt.ylabel("id_firm")
-#     plt.xlabel("t")
-#     plt.title("GuruA")
-#     plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/guruA.svg")
-#
-# def plot_guruA(show=True):
-#     Statistics.log("guru_data")
-#     plt.clf()
-#     yy = []
-#     for i in range(Config.T):
-#         yy.append(i)
-#     plt.plot(yy, Statistics.guruA, 'b-')
-#     plt.plot(yy, Statistics.guruA_r, 'r-')
-#     plt.plot(yy, Statistics.rate_without_best_networth, 'g-')
-#     plt.ylabel("id_firm")
-#     plt.xlabel("t")
-#     plt.title("GuruA")
-#     plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/guruA.svg")
-
-
-def plot_best_networth_rate(show=True):
-    plt.clf()
-    plt.figure(figsize=(12, 8))
-    yy = []
-    for i in range(Config.T):
-        yy.append(i)
-
-    color = 'tab:red'
-    fig, ax1 = plt.subplots(figsize=(12, 8))
-    ax1.set_xlabel('t')
-    ax1.set_ylabel('id', color=color)
-    ax1.plot(yy, Statistics.best_networth_firm, color=color, label="id best networth")
-    ax1.tick_params(axis='y', labelcolor=color)
-
-    ax2 = ax1.twinx()  # instantiate a second Axes that shares the same x-axis
-
-    color = 'tab:blue'
-    ax2.set_ylabel('rate', color=color)  # we already handled the x-label with ax1
-    ax2.plot(yy, Statistics.best_networth_rate, color=color, label="r of best networth")
-    ax2.plot(yy, Statistics.rate_without_best_networth, color='tab:green', label="r of others")
-    ax2.tick_params(axis='y', labelcolor=color)
-    fig.tight_layout()  # otherwise the right y-label is slightly clipped
-    ax1.legend(loc=0)
-    ax2.legend(loc=1)
-    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/best_networth.pdf")
-
-
-def plot_profits(show=True):
-    Statistics.log("profits")
-    plt.clf()
-    xx = []
-    yy = []
-    for i in range(150, Config.T):
-        xx.append(i)
-        yy.append(Statistics.firmsπ[i] / Statistics.firmsNum[i])
-    plt.plot(xx, yy, 'b-')
-    plt.ylabel("avg profits")
-    plt.xlabel("t")
-    plt.title("profits of companies")
-    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/profits.svg")
-
-
-def plot_baddebt(show=True):
-    Statistics.log("bad_debt")
-    plt.clf()
-    xx = []
-    yy = []
-    for i in range(150, Config.T):
-        xx.append(i)
-        yy.append(Statistics.bankB[i] / Statistics.firmsNum[i])
-    plt.plot(xx, yy, 'b-')
-    plt.ylabel("avg bad debt")
-    plt.xlabel("t")
-    plt.title("Bad debt")
-    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/bad_debt_avg.svg")
-
-
-def plot_bankrupcies(show=True):
-    Statistics.log("bankrupcies")
-    plt.clf()
-    xx = []
-    yy = []
-    for i in range(150, Config.T):
-        xx.append(i)
-        yy.append(Statistics.bankruptcy[i])
-    plt.plot(xx, yy, 'b-')
-    plt.ylabel("num of bankrupcies")
-    plt.xlabel("t")
-    plt.title("Bankrupted firms")
-    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/bankrupted.svg")
-
-
-def plot_bad_debt(show=True):
-    Statistics.log("bad_debt")
-    plt.clf()
-    xx = []
-    yy = []
-    for i in range(150, Config.T):
-        if Statistics.bankB[i] > 0:
-            xx.append(i)
-            yy.append(math.log(Statistics.bankB[i]))
-    plt.plot(xx, yy, 'b-')
-    plt.ylabel("ln B")
-    plt.xlabel("t")
-    plt.title("Bad debt")
-    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/bad_debt.svg")
-
-
-def plot_interest_rate(show):
-    Statistics.log("interest_rate")
-    plt.clf()
-    xx2 = []
-    yy = []
-    for i in range(150, Config.T):
-        yy.append(i)
-        xx2.append(Statistics.rate[i])
-    plt.plot(yy, xx2, 'b-')
-    plt.ylabel("mean rate")
-    plt.xlabel("t")
-    plt.title("Mean interest rates of companies")
-    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/interest_rate.svg")
-
-
-def plot_growth_rate(show):
-    Statistics.log("growth_rate")
-    plt.clf()
-    xx2 = []
-    yy = []
-    for i in range(150, Config.T):
-        if Status.firmsGrowRate[i] != 0:
+    def plot_aggregate_output(show=True):
+        Statistics.log("aggregate_output")
+        plt.clf()
+        xx1 = []
+        yy = []
+        for i in range(150, Config.T):
             yy.append(i)
-            xx2.append(Status.firmsGrowRate[i])
-    plt.plot(yy, xx2, 'b-')
-    plt.ylabel("growth")
-    plt.xlabel("t")
-    plt.title("Growth rates of agg output")
-    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/growth_rates.svg")
+            xx1.append(math.log(Status.firmsKsums[i]))
+        plt.plot(yy, xx1, 'b-')
+        plt.ylabel("log K")
+        plt.xlabel("t")
+        plt.title("Logarithm of aggregate output")
+        plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/aggregate_output.svg")
 
+    def plot_scatter_Ar(show=True):
+        plt.clf()
+        plt.ylabel("r")
+        plt.xlabel("A")
+        plt.title("rxA")
+        plt.scatter(Statistics.matrix_Ar_A, Statistics.matrix_Ar_r)
+        plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/equity_scatter.pdf")
 
-def plot_distribution_kl(show):
-    plt.clf()
-    fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(10, 4))
+    def plot_histogram_equity(show=True):
+        plt.clf()
+        plt.hist(Statistics.matrix_Ar_A, bins=20, log=True)
+        plt.title('FirmsA distribution')
+        plt.xlabel('FirmsA')
+        plt.ylabel('log counts')
+        plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/equity_histogram.pdf")
 
-    axs[0].hist(x=Statistics.firmsK, bins=20, color="#3182bd", alpha=0.5)
-    axs[0].plot(Statistics.firmsK, np.full_like(Statistics.firmsK, -0.01), '|k', markeredgewidth=1)
-    axs[0].set_title('FirmsK distribution')
-    axs[0].set_xlabel('FirmsK')
-    axs[0].set_ylabel('counts')
+    def plot_percentage_equity(show=True):
+        plt.clf()
+        plt.figure(figsize=(12, 8))
+        yy = []
+        for i in range(Config.T):
+            yy.append(i)
 
-    axs[1].hist(x=Statistics.firmsπ, bins=20, color="#3182bd", alpha=0.5)
-    axs[1].plot(Statistics.firmsπ, np.full_like(Statistics.firmsπ, -0.01), '|k', markeredgewidth=1)
-    axs[1].set_title('FirmsL distribution')
-    axs[1].set_xlabel('FirmsL')
-    axs[1].set_ylabel('counts')
+        color = 'tab:red'
+        fig, ax1 = plt.subplots(figsize=(12, 8))
+        ax1.set_xlabel('t')
+        ax1.set_ylabel('∑A', color=color)
+        ax1.plot(yy, Statistics.firmsA, color=color, label="sum of firms A")
+        ax1.tick_params(axis='y', labelcolor=color)
 
-    plt.tight_layout()
-    plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/distribution.svg")
+        ax2 = ax1.twinx()  # instantiate a second Axes that shares the same x-axis
 
+        color = 'tab:blue'
+        ax2.set_ylabel('%', color=color)  # we already handled the x-label with ax1
+        ax2.plot(yy, Statistics.best_networth_A_percentage, color=color, label="% of A of best networth")
+        ax2.tick_params(axis='y', labelcolor=color)
+        fig.tight_layout()  # otherwise the right y-label is slightly clipped
+        ax1.legend(loc=0)
+        ax2.legend(loc=1)
+        plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/percentage_networth.pdf")
 
-def show_figures(show):
-    plot_histogram_equity(show)
-    plot_scatter_Ar(show)
-    plot_best_networth_rate(show)
-    plot_percentage_equity(show)
-    plot_aggregate_output(show)
-    plot_growth_rate(show)
-    plot_zipf_rank(show)
-    plot_zipf_density(show)
-    plot_zipf_density1(show)
-    plot_profits(show)
-    plot_bad_debt(show)
-    plot_baddebt(show)
-    plot_bankrupcies(show)
-    plot_interest_rate(show)
-    plot_distribution_kl(show)
+    # def plot_guru_equity(show=True):
+    #     Statistics.log("guru_equity")
+    #     plt.clf()
+    #     yy = []
+    #     for i in range(Config.T):
+    #         yy.append(i)
+    #     plt.plot(yy, Statistics.guru_equity, 'b-')
+    #     plt.plot(yy, Statistics.firmsL, 'b-')
+    #     plt.ylabel("id_firm")
+    #     plt.xlabel("t")
+    #     plt.title("GuruA")
+    #     plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/guruA.svg")
+    #
+    # def plot_guruA(show=True):
+    #     Statistics.log("guru_data")
+    #     plt.clf()
+    #     yy = []
+    #     for i in range(Config.T):
+    #         yy.append(i)
+    #     plt.plot(yy, Statistics.guruA, 'b-')
+    #     plt.plot(yy, Statistics.guruA_r, 'r-')
+    #     plt.plot(yy, Statistics.rate_without_best_networth, 'g-')
+    #     plt.ylabel("id_firm")
+    #     plt.xlabel("t")
+    #     plt.title("GuruA")
+    #     plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/guruA.svg")
+
+    def plot_best_networth_rate(show=True):
+        plt.clf()
+        plt.figure(figsize=(12, 8))
+        yy = []
+        for i in range(Config.T):
+            yy.append(i)
+
+        color = 'tab:red'
+        fig, ax1 = plt.subplots(figsize=(12, 8))
+        ax1.set_xlabel('t')
+        ax1.set_ylabel('id', color=color)
+        ax1.plot(yy, Statistics.best_networth_firm, color=color, label="id best networth")
+        ax1.tick_params(axis='y', labelcolor=color)
+
+        ax2 = ax1.twinx()  # instantiate a second Axes that shares the same x-axis
+
+        color = 'tab:blue'
+        ax2.set_ylabel('rate', color=color)  # we already handled the x-label with ax1
+        ax2.plot(yy, Statistics.best_networth_rate, color=color, label="r of best networth")
+        ax2.plot(yy, Statistics.rate_without_best_networth, color='tab:green', label="r of others")
+        ax2.tick_params(axis='y', labelcolor=color)
+        fig.tight_layout()  # otherwise the right y-label is slightly clipped
+        ax1.legend(loc=0)
+        ax2.legend(loc=1)
+        plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/best_networth.pdf")
+
+    def plot_profits(show=True):
+        Statistics.log("profits")
+        plt.clf()
+        xx = []
+        yy = []
+        for i in range(150, Config.T):
+            xx.append(i)
+            yy.append(Statistics.firmsπ[i] / Statistics.firmsNum[i])
+        plt.plot(xx, yy, 'b-')
+        plt.ylabel("avg profits")
+        plt.xlabel("t")
+        plt.title("profits of companies")
+        plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/profits.svg")
+
+    def plot_baddebt(show=True):
+        Statistics.log("bad_debt")
+        plt.clf()
+        xx = []
+        yy = []
+        for i in range(150, Config.T):
+            xx.append(i)
+            yy.append(Statistics.bankB[i] / Statistics.firmsNum[i])
+        plt.plot(xx, yy, 'b-')
+        plt.ylabel("avg bad debt")
+        plt.xlabel("t")
+        plt.title("Bad debt")
+        plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/bad_debt_avg.svg")
+
+    def plot_bankrupcies(show=True):
+        Statistics.log("bankrupcies")
+        plt.clf()
+        xx = []
+        yy = []
+        for i in range(150, Config.T):
+            xx.append(i)
+            yy.append(Statistics.bankruptcy[i])
+        plt.plot(xx, yy, 'b-')
+        plt.ylabel("num of bankrupcies")
+        plt.xlabel("t")
+        plt.title("Bankrupted firms")
+        plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/bankrupted.svg")
+
+    def plot_bad_debt(show=True):
+        Statistics.log("bad_debt")
+        plt.clf()
+        xx = []
+        yy = []
+        for i in range(150, Config.T):
+            if Statistics.bankB[i] > 0:
+                xx.append(i)
+                yy.append(math.log(Statistics.bankB[i]))
+        plt.plot(xx, yy, 'b-')
+        plt.ylabel("ln B")
+        plt.xlabel("t")
+        plt.title("Bad debt")
+        plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/bad_debt.svg")
+
+    def plot_interest_rate(show):
+        Statistics.log("interest_rate")
+        plt.clf()
+        xx2 = []
+        yy = []
+        for i in range(150, Config.T):
+            yy.append(i)
+            xx2.append(Statistics.rate[i])
+        plt.plot(yy, xx2, 'b-')
+        plt.ylabel("mean rate")
+        plt.xlabel("t")
+        plt.title("Mean interest rates of companies")
+        plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/interest_rate.svg")
+
+    def plot_growth_rate(show):
+        Statistics.log("growth_rate")
+        plt.clf()
+        xx2 = []
+        yy = []
+        for i in range(150, Config.T):
+            if Status.firmsGrowRate[i] != 0:
+                yy.append(i)
+                xx2.append(Status.firmsGrowRate[i])
+        plt.plot(yy, xx2, 'b-')
+        plt.ylabel("growth")
+        plt.xlabel("t")
+        plt.title("Growth rates of agg output")
+        plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/growth_rates.svg")
+
+    def plot_distribution_kl(show):
+        plt.clf()
+        fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(10, 4))
+
+        axs[0].hist(x=Statistics.firmsK, bins=20, color="#3182bd", alpha=0.5)
+        axs[0].plot(Statistics.firmsK, np.full_like(Statistics.firmsK, -0.01), '|k', markeredgewidth=1)
+        axs[0].set_title('FirmsK distribution')
+        axs[0].set_xlabel('FirmsK')
+        axs[0].set_ylabel('counts')
+
+        axs[1].hist(x=Statistics.firmsπ, bins=20, color="#3182bd", alpha=0.5)
+        axs[1].plot(Statistics.firmsπ, np.full_like(Statistics.firmsπ, -0.01), '|k', markeredgewidth=1)
+        axs[1].set_title('FirmsL distribution')
+        axs[1].set_xlabel('FirmsL')
+        axs[1].set_ylabel('counts')
+
+        plt.tight_layout()
+        plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/distribution.svg")
+
+    def run(save=False):
+
+        method_list = [func for func in dir(Plots) if func.startswith("plot_")]
+        progress_bar = Bar("Saving figures", max=len(method_list)) if save else None
+        if progress_bar:
+            progress_bar.update()
+
+        for plot in method_list:
+            eval(f"Plots.{plot}(show={not save})")
+            if progress_bar:
+                progress_bar.next()
+        if progress_bar:
+            progress_bar.finish()
 
 
 def generate_dataframe_from_statistics():
     return pd.DataFrame(
         {
-            'firmsNum':Statistics.firmsNum,
-            'firmsNentry':Statistics.firmsNEntry,
-            'bankruptcy':Statistics.bankruptcy,
-            'firmsK':Statistics.firmsK,
-            'firmsL':Statistics.firmsL,
-            'firmsProfit':Statistics.firmsπ,
-            'rate':Statistics.rate,
-            'bankL':Statistics.bankL,
-            'bankB':Statistics.bankB,
-            'bankProfit':Statistics.bankπ,
+            'firmsNum': Statistics.firmsNum,
+            'firmsNentry': Statistics.firmsNEntry,
+            'bankruptcy': Statistics.bankruptcy,
+            'firmsK': Statistics.firmsK,
+            'firmsL': Statistics.firmsL,
+            'firmsProfit': Statistics.firmsπ,
+            'rate': Statistics.rate,
+            'bankL': Statistics.bankL,
+            'bankB': Statistics.bankB,
+            'bankProfit': Statistics.bankπ,
         }
     )
+
 
 def _config_description_():
     description = sys.argv[0]
@@ -698,7 +664,11 @@ def _config_description_():
             description += f" {attr}={value}  "
     return description
 
-def save_results(filename):
+
+def save_results(filename, interactive=False):
+    progress_bar = Bar("Saving results", max=Config.T) if interactive else None
+    if progress_bar:
+        progress_bar.update()
     filename = os.path.basename(filename).rsplit('.', 1)[0]
     with open(f"{OUTPUT_DIRECTORY}\\{filename}.inp", 'w', encoding="utf-8") as script:
         script.write(f"open {filename}.csv\n")
@@ -716,10 +686,10 @@ def save_results(filename):
         results.write(f"{'bankL':>15}")
         results.write(f"{'bankB':>15}")
         results.write(f"{'bankProfit':>15}")
-        results.write(f"{'guruA':>15}")
-        results.write(f"{'guruR':>15}")
-        results.write(f"{'guruA_r':>15}")
-        results.write(f"{'resto_r':>15}")
+        results.write(f"{'bestA':>15}")
+        results.write(f"{'bestA_r':>15}")
+        results.write(f"{'rate_without_bestA':>15}")
+        results.write(f"{'bestA_percentage':>15}")
         results.write(f"\n")
         for i in range(Config.T):
             line = f"{i:>3}"
@@ -733,11 +703,16 @@ def save_results(filename):
             line += f"{Statistics.bankL[i]:15.2f}"
             line += f"{Statistics.bankB[i]:15.2f}"
             line += f"{Statistics.bankπ[i]:15.2f}"
-            line += f"{Statistics.guruA[i]:15.2f}"
+            line += f"{Statistics.best_networth_firm[i]:15.2f}"
             line += f"{Statistics.best_networth_rate[i]:15.2f}"
-            line += f"{Statistics.guruA_r[i]:15.2f}"
             line += f"{Statistics.rate_without_best_networth[i]:15.2f}"
+            line += f"{Statistics.best_networth_A_percentage[i]:15.2f}"
             results.write(f"{line}\n")
+            if progress_bar:
+                progress_bar.next()
+        if progress_bar:
+            progress_bar.finish()
+
 
 # %%
 
@@ -745,21 +720,19 @@ def doInteractive():
     global OUTPUT_DIRECTORY
     parser = argparse.ArgumentParser(description="Fluctuations firms/banks")
     parser.add_argument("--output", type=str, default=OUTPUT_DIRECTORY, help="Directory to store results")
-    parser.add_argument("--plot", action="store_true", help="Shows the plots")
+    parser.add_argument("--plot", action="store_true", help="Save the plots in dir '" + OUTPUT_DIRECTORY + "'")
     parser.add_argument("--sizeparam", type=int, default=Config.Ñ,
                         help="Size parameter (default=%s)" % Config.Ñ)
-    parser.add_argument("--saveplot", action="store_true", 
-                        help="Save the plots in dir '" + OUTPUT_DIRECTORY+"'")
     parser.add_argument("--save", type=str,
-                        help="Save the data in csv/inp in '" + OUTPUT_DIRECTORY+"'")
-    parser.add_argument("--log", action="store_true", 
+                        help="Save the data in csv/inp in '" + OUTPUT_DIRECTORY + "'")
+    parser.add_argument("--log", action="store_true",
                         help="Log (stdout default)")
-    parser.add_argument("--t", type=int, default=None,help="Number of steps")
-    parser.add_argument("--n", type=int, default=None,help="Number of firms")
+    parser.add_argument("--t", type=int, default=None, help="Number of steps")
+    parser.add_argument("--n", type=int, default=None, help="Number of firms")
     parser.add_argument("--logfile", type=str,
-                        help="Log to file in directory '" + 
-                        OUTPUT_DIRECTORY+"'")
-    parser.add_argument("--debug", 
+                        help="Log to file in directory '" +
+                             OUTPUT_DIRECTORY + "'")
+    parser.add_argument("--debug",
                         help="Do a debug session at t=X, default each t",
                         type=int, const=-1, nargs='?')
     args = parser.parse_args()
@@ -785,22 +758,18 @@ def doInteractive():
         if Config.T < 0:
             print("value not valid for T: must be >0")
             sys.exit(-1)
-                
+
     if args.log or args.logfile:
         Statistics.enableLog(args.logfile)
 
-    doSimulation(args.debug)
+    doSimulation(doDebug=args.debug, interactive=True)
     if Status.numFailuresGlobal > 0:
         Statistics.log("[total failures in all times = %s]" % Status.numFailuresGlobal)
     else:
         Statistics.log("[no failures]")
-    if args.plot:
-        show_figures(True)
-    else:
-        if args.saveplot:
-            show_figures(False)
+    Plots.run(save=args.plot)
     if args.save:
-        save_results(args.save)
+        save_results(filename=args.save, interactive=True)
 
 
 def is_notebook():
@@ -819,8 +788,7 @@ if __name__ == "__main__":
     if is_notebook():
         global dataframe
         doSimulation()
-        show_figures(True)
+        Plots.run(save=True)
         dataframe = generate_dataframe_from_statistics()
-        dataframe
     else:
         doInteractive()
