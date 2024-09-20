@@ -9,7 +9,6 @@ from pdb import set_trace
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from progress.bar import Bar
 
 random.seed(40579)
 OUTPUT_DIRECTORY = "output"
@@ -346,7 +345,10 @@ def doSimulation(doDebug=False, interactive=False):
     updateFirmsStatus()
     updateBankL()
     BankSector.D = BankSector.L - BankSector.E
-    progress_bar = Bar("Executing model", max=Config.T) if interactive and not doDebug else None
+    progress_bar = None
+    if interactive and not doDebug:
+        from progress.bar import Bar
+        progress_bar = Bar("Executing model", max=Config.T)
     if progress_bar:
         progress_bar.update()
     for t in range(Config.T):
@@ -389,7 +391,6 @@ class Plots:
         plt.title("Zipf plot of firm sizes")
         plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/zipf_density.svg")
 
-    # %%
     def plot_zipf_density1(show=True):
         Statistics.log("zipf_density")
         plt.clf()
@@ -648,9 +649,11 @@ class Plots:
         plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/distribution.svg")
 
     def run(save=False):
-
         method_list = [func for func in dir(Plots) if func.startswith("plot_")]
-        progress_bar = Bar("Saving figures", max=len(method_list)) if save else None
+        progress_bar = None
+        if save:
+            from progress.bar import Bar
+            progress_bar = Bar("Saving figures", max=len(method_list))
         if progress_bar:
             progress_bar.update()
 
@@ -689,7 +692,10 @@ def _config_description_():
 
 
 def save_results(filename, interactive=False):
-    progress_bar = Bar("Saving results", max=Config.T) if interactive else None
+    progress_bar = None
+    if interactive:
+        from progress.bar import Bar
+        progress_bar = Bar("Saving results", max=Config.T)
     if progress_bar:
         progress_bar.update()
     filename = os.path.basename(filename).rsplit('.', 1)[0]
