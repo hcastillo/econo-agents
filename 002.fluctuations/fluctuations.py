@@ -41,7 +41,8 @@ class Config:
 
     # if True, new firms are created using formula of paper, if not, same N number of firms is sustained in time
     # the same are failed, the same are introduced:
-    allowNewEntry = False
+    allowNewEntry = True
+    newFirmsInitialValues = False
 
 
 # %%
@@ -180,6 +181,8 @@ class Firm:
 
     def determineInterestRate(self):
         # (equation 12)
+        # Beta = (1/v)-1
+        return Config.φ/Config.g - 2*Config.ω*( 1/Config.v -1)*Config.φ*Config.φ/(Config.g*Config.g)
         return (2 + self.A) / (2 * Config.c * Config.g * (1 / (Config.c * Config.φ) + self.π + self.A) +
                                2 * Config.c * Config.g * BankSector.L * (
                                        Config.λ * self.__ratioK() + (1 - Config.λ) * self.__ratioA()))
@@ -262,8 +265,25 @@ def removeBankruptedFirms():
 
 
 def addFirms(Nentry):
+    newFirmL = 0
+    newFirmA = 0
+    newFirmK = 0
+    for firm in Status.firms:
+        newFirmL += firm.L
+        newFirmA += firm.A
+        newFirmK += firm.K
+    newFirmL /= len(Status.firms)
+    newFirmA /= len(Status.firms)
+    newFirmK /= len(Status.firms)
+
     for i in range(Nentry):
-        Status.firms.append(Firm())
+        newFirm = Firm()
+        if not Config.newFirmsInitialValues:
+            newFirm.L = newFirmL
+            newFirm.A = newFirmA
+            newFirm.K = newFirmK
+        Status.firms.append(newFirm)
+
     Statistics.firmsNEntry.append(Nentry)
     Statistics.log("        - add %d new firms (Nentry)" % Nentry)
 
@@ -451,19 +471,22 @@ class Plots:
         color = 'tab:red'
         fig, ax1 = plt.subplots(figsize=(12, 8))
         ax1.set_xlabel('t')
-        ax1.set_ylabel('∑A', color=color)
-        ax1.plot(yy, Statistics.firmsA, color=color, label="sum of firms A")
+        ax1.set_ylabel('%', color=color)  # we already handled the x-label with ax1
+        #ax1.set_ylabel('∑A', color=color)
+        #ax1.plot(yy, Statistics.firmsA, color=color, label="sum of firms A")
+        ax1.plot(yy, Statistics.best_networth_A_percentage, color=color, label="% of A of best networth")
+
         ax1.tick_params(axis='y', labelcolor=color)
 
-        ax2 = ax1.twinx()  # instantiate a second Axes that shares the same x-axis
+        #ax2 = ax1.twinx()  # instantiate a second Axes that shares the same x-axis
 
-        color = 'tab:blue'
-        ax2.set_ylabel('%', color=color)  # we already handled the x-label with ax1
-        ax2.plot(yy, Statistics.best_networth_A_percentage, color=color, label="% of A of best networth")
-        ax2.tick_params(axis='y', labelcolor=color)
-        fig.tight_layout()  # otherwise the right y-label is slightly clipped
+        #color = 'tab:blue'
+        #ax2.set_ylabel('%', color=color)  # we already handled the x-label with ax1
+        #ax2.plot(yy, Statistics.best_networth_A_percentage, color=color, label="% of A of best networth")
+        #ax2.tick_params(axis='y', labelcolor=color)
+        #fig.tight_layout()  # otherwise the right y-label is slightly clipped
         ax1.legend(loc=0)
-        ax2.legend(loc=1)
+        #ax2.legend(loc=1)
         plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/percentage_networth.pdf")
 
     # def plot_guru_equity(show=True):
@@ -688,8 +711,8 @@ def save_results(filename, interactive=False):
         results.write(f"{'bankProfit':>15}")
         results.write(f"{'bestA':>15}")
         results.write(f"{'bestA_r':>15}")
-        results.write(f"{'rate_without_bestA':>15}")
-        results.write(f"{'bestA_percentage':>15}")
+        results.write(f"{'others_r':>15}")
+        results.write(f"{'bestA_percen':>15}")
         results.write(f"\n")
         for i in range(Config.T):
             line = f"{i:>3}"
@@ -724,7 +747,7 @@ def doInteractive():
     parser.add_argument("--sizeparam", type=int, default=Config.Ñ,
                         help="Size parameter (default=%s)" % Config.Ñ)
     parser.add_argument("--save", type=str,
-                        help="Save the data in csv/inp in '" + OUTPUT_DIRECTORY + "'")
+                        help="Save the data/plots in csv/inp in '" + OUTPUT_DIRECTORY + "'")
     parser.add_argument("--log", action="store_true",
                         help="Log (stdout default)")
     parser.add_argument("--t", type=int, default=None, help="Number of steps")
@@ -767,7 +790,8 @@ def doInteractive():
         Statistics.log("[total failures in all times = %s]" % Status.numFailuresGlobal)
     else:
         Statistics.log("[no failures]")
-    Plots.run(save=args.plot)
+    if args.plot:
+        Plots.run(save=True)
     if args.save:
         save_results(filename=args.save, interactive=True)
 
@@ -788,7 +812,7 @@ if __name__ == "__main__":
     if is_notebook():
         global dataframe
         doSimulation()
-        Plots.run(save=True)
+        Plots.run()
         dataframe = generate_dataframe_from_statistics()
     else:
         doInteractive()
