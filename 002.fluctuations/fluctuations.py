@@ -41,7 +41,12 @@ class Config:
     # if True, new firms are created using formula of paper, if not, same N number of firms is sustained in time
     # the same are failed, the same are introduced:
     allowNewEntry = True
+
+    # If True, firms added obtain initial values L_i0, A_i0 and K_i0, if False, the mean of the surviving values is used
     newFirmsInitialValues = False
+
+    # If True, the equilibrium rate is used (a fix value) instead of formula for interest in the paper
+    rateEquilibrium = True
 
 
 # %%
@@ -179,10 +184,12 @@ class Firm:
         return result
 
     def determineInterestRate(self):
-        # (equation 12)
-        # Beta = (1/v)-1
-        return Config.φ/Config.g - 2*Config.ω*( 1/Config.v -1)*Config.φ*Config.φ/(Config.g*Config.g)
-        return (2 + self.A) / (2 * Config.c * Config.g * (1 / (Config.c * Config.φ) + self.π + self.A) +
+        if Config.rateEquilibrium:
+            # Beta = (1/v)-1
+            return Config.φ/Config.g - 2*Config.ω*( 1/Config.v -1)*Config.φ*Config.φ/(Config.g*Config.g)
+        else:
+            # (equation 12)
+            return (2 + self.A) / (2 * Config.c * Config.g * (1 / (Config.c * Config.φ) + self.π + self.A) +
                                2 * Config.c * Config.g * BankSector.L * (
                                        Config.λ * self.__ratioK() + (1 - Config.λ) * self.__ratioA()))
 
