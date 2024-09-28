@@ -9,6 +9,7 @@ from pdb import set_trace
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import statistics
 
 random.seed(40579)
 OUTPUT_DIRECTORY = "output"
@@ -55,14 +56,19 @@ class Statistics:
     logfile = None
 
     @staticmethod
-    def determine_best_networth_firm(firms):
+    def determine_best_and_worst_networth_firm(firms):
         A_max = 0
+        A_min = np.inf
         firm_with_best_networth = None
+        firm_with_worst_networth = None
         for firm in firms:
             if firm.A > A_max:
                 firm_with_best_networth = firm
                 A_max = firm.A
-        return firm_with_best_networth
+            if firm.A < A_min:
+                firm_with_worst_networth = firm
+                A_min = firm.A
+        return firm_with_best_networth, firm_with_worst_networth
 
     @staticmethod
     def enableLog(logfile: str = None):
@@ -101,6 +107,8 @@ class Statistics:
 
     best_networth_rate = []
     best_networth_firm = []
+    worst_networth = []
+    worst_networth_firm = []
     rate_without_best_networth = []
     num_igual_r = []
 
@@ -125,8 +133,10 @@ class Statistics:
         Statistics.firmsNum.append(len(Status.firms))
         Statistics.rate.append(BankSector.getAverageRate())
 
-        best_networth_firm = Statistics.determine_best_networth_firm(Status.firms)
+        best_networth_firm, worst_networth_firm = Statistics.determine_best_and_worst_networth_firm(Status.firms)
         Statistics.best_networth_firm.append(best_networth_firm.id)
+        Statistics.worst_networth_firm.append(worst_networth_firm.id)
+        Statistics.worst_networth.append(best_networth_firm.A)
         Statistics.best_networth_rate.append(best_networth_firm.r)
         Statistics.best_networth_A_percentage.append(best_networth_firm.A / Status.firmsAsum)
         r_without_best_networth_firm = 0
@@ -186,12 +196,12 @@ class Firm:
     def determineInterestRate(self):
         if Config.rateEquilibrium:
             # Beta = (1/v)-1
-            return Config.φ/Config.g - 2*Config.ω*( 1/Config.v -1)*Config.φ*Config.φ/(Config.g*Config.g)
+            return Config.φ / Config.g - 2 * Config.ω * (1 / Config.v - 1) * Config.φ * Config.φ / (Config.g * Config.g)
         else:
             # (equation 12)
             return (2 + self.A) / (2 * Config.c * Config.g * (1 / (Config.c * Config.φ) + self.π + self.A) +
-                               2 * Config.c * Config.g * BankSector.L * (
-                                       Config.λ * self.__ratioK() + (1 - Config.λ) * self.__ratioA()))
+                                   2 * Config.c * Config.g * BankSector.L * (
+                                           Config.λ * self.__ratioK() + (1 - Config.λ) * self.__ratioA()))
 
     def __ratioK(self):
         return self.K / Status.firmsKsum
@@ -271,17 +281,9 @@ def removeBankruptedFirms():
 
 
 def addFirms(Nentry):
-    newFirmL = 0
-    newFirmA = 0
-    newFirmK = 0
-    for firm in Status.firms:
-        newFirmL += firm.L
-        newFirmA += firm.A
-        newFirmK += firm.K
-    newFirmL /= len(Status.firms)
-    newFirmA /= len(Status.firms)
-    newFirmK /= len(Status.firms)
-
+    newFirmL = statistics.mode(list(map(lambda x: x.L, Status.firms)))
+    newFirmA = statistics.mode(list(map(lambda x: x.A, Status.firms)))
+    newFirmK = statistics.mode(list(map(lambda x: x.K, Status.firms)))
     for i in range(Nentry):
         newFirm = Firm()
         if not Config.newFirmsInitialValues:
@@ -289,20 +291,14 @@ def addFirms(Nentry):
             newFirm.A = newFirmA
             newFirm.K = newFirmK
         Status.firms.append(newFirm)
-
     Statistics.firmsNEntry.append(Nentry)
-    Statistics.log("        - add %d new firms (Nentry)" % Nentry)
+    Statistics.log(f"        - add %d new firms (Nentry) with L={newFirmL},A={newFirmA},K={newFirmK}" % Nentry)
 
 
 def updateFirmsStatus():
-    Status.firmsAsum = 0.0
-    Status.firmsKsum = 0.0
-    Status.firmsLsum = 0.0
-    for firm in Status.firms:
-        Status.firmsAsum += firm.A
-        Status.firmsKsum += firm.K
-        Status.firmsLsum += firm.L
-
+    Status.firmsAsum = sum(map(lambda x: x.A, Status.firms))
+    Status.firmsKsum = sum(map(lambda x: x.K, Status.firms))
+    Status.firmsLsum = sum(map(lambda x: x.L, Status.firms))
     Status.firmsKsums.append(Status.firmsKsum)
     Status.firmsGrowRate.append(
         0 if Status.t == 0 else (Status.firmsKsums[Status.t] - Status.firmsKsums[Status.t - 1]) / Status.firmsKsums[
@@ -429,7 +425,7 @@ class Plots:
         for firm in Status.firms:
             if round(firm.K) > 0:
                 y.append(math.log(firm.K))
-        y.sort();
+        y.sort()
         y.reverse()
         for i in range(len(y)):
             x.append(math.log(float(i + 1)))
@@ -523,6 +519,32 @@ class Plots:
     #     plt.xlabel("t")
     #     plt.title("GuruA")
     #     plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/guruA.svg")
+
+    def plot_ddf_networth(show=True):
+        networths = []
+        worst_firm_A = np.inf
+        xx = []
+        x = 1
+        for firm in Status.firms:
+            networths.append(firm.A)
+            if firm.A < worst_firm_A:
+                worst_firm_A = firm.A
+            x += 1
+            xx.append(x)
+        networths.sort(reverse=True)
+        networths1 = list(map(lambda firm: firm.A, Status.firms))
+
+        for i in range(len(networths)):
+            networths[i] = networths[i] / worst_firm_A
+        plt.clf()
+        fig = plt.figure(figsize=(12, 8))
+        ax = fig.add_subplot(111)
+        plt.plot(xx, networths, 'b-')
+        plt.title("ddf of A normalized")
+        ax.set_yscale('log')
+        ax.set_xscale('log')
+        # plt.axis('scaled')
+        plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/ddf_networth.svg")
 
     def plot_best_networth_rate(show=True):
         plt.clf()
@@ -740,6 +762,8 @@ def save_results(filename, interactive=False):
             line += f"{Statistics.bankB[i]:15.2f}"
             line += f"{Statistics.bankπ[i]:15.2f}"
             line += f"{Statistics.best_networth_firm[i]:15.2f}"
+            line += f"{Statistics.worst_networth_firm[i]:15.2f}"
+            line += f"{Statistics.worst_networth[i]:15.2f}"
             line += f"{Statistics.best_networth_rate[i]:15.2f}"
             line += f"{Statistics.rate_without_best_networth[i]:15.2f}"
             line += f"{Statistics.best_networth_A_percentage[i]:15.2f}"
