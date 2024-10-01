@@ -11,7 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import statistics
 
-random.seed(40579)
+random.seed(10579)
 OUTPUT_DIRECTORY = "output"
 
 
@@ -36,12 +36,13 @@ class Config:
     π_i0 = 0  # profit
     B_i0 = 0  # bad debt
 
+    A_multiplier = 0.001
     # risk coefficient for bank sector (Basel)
     v = 0.2
 
     # if True, new firms are created using formula of paper, if not, same N number of firms is sustained in time
     # the same are failed, the same are introduced:
-    allowNewEntry = True
+    allowNewEntry = False
 
     # If True, firms added obtain initial values L_i0, A_i0 and K_i0, if False, the mean of the surviving values is used
     newFirmsInitialValues = False
@@ -61,14 +62,22 @@ class Statistics:
         A_min = np.inf
         firm_with_best_networth = None
         firm_with_worst_networth = None
-        for firm in firms:
-            if firm.A > A_max:
-                firm_with_best_networth = firm
-                A_max = firm.A
-            if firm.A < A_min:
-                firm_with_worst_networth = firm
-                A_min = firm.A
-        return firm_with_best_networth, firm_with_worst_networth
+        r_without_best_networth_firm = 0
+        firm_with_best_networth_r = 0
+        for i in range(len(firms)):
+            if firms[i].A > A_max:
+                firm_with_best_networth = i
+                firm_with_best_networth_r = firms[i].r
+                A_max = firms[i].A
+            if firms[i].A < A_min:
+                firm_with_worst_networth = i
+                A_min = firms[i].A
+            r_without_best_networth_firm += firms[i].r
+
+        r_without_best_networth_firm -= firm_with_best_networth_r
+        r_without_best_networth_firm /= (len(firms)-1)   # is the average
+        return (firm_with_best_networth, firm_with_worst_networth, A_max, firm_with_best_networth_r,
+                r_without_best_networth_firm)
 
     @staticmethod
     def enableLog(logfile: str = None):
@@ -133,17 +142,15 @@ class Statistics:
         Statistics.firmsNum.append(len(Status.firms))
         Statistics.rate.append(BankSector.getAverageRate())
 
-        best_networth_firm, worst_networth_firm = Statistics.determine_best_and_worst_networth_firm(Status.firms)
-        Statistics.best_networth_firm.append(best_networth_firm.id)
-        Statistics.worst_networth_firm.append(worst_networth_firm.id)
-        Statistics.worst_networth.append(best_networth_firm.A)
-        Statistics.best_networth_rate.append(best_networth_firm.r)
-        Statistics.best_networth_A_percentage.append(best_networth_firm.A / Status.firmsAsum) #TODO
-        r_without_best_networth_firm = 0
-        for firm in Status.firms:
-            if firm.id != best_networth_firm.id:
-                r_without_best_networth_firm += firm.r
-        Statistics.rate_without_best_networth.append(r_without_best_networth_firm / (len(Status.firms) - 1))
+        (best_networth_firm_id, worst_networth_firm_id,
+         best_networth_firm_A, best_networth_firm_r,
+         r_without_best_networth_firm ) = Statistics.determine_best_and_worst_networth_firm(Status.firms)
+        Statistics.best_networth_firm.append(best_networth_firm_id)
+        Statistics.worst_networth_firm.append(worst_networth_firm_id)
+        Statistics.worst_networth.append(best_networth_firm_A)
+        Statistics.best_networth_rate.append(best_networth_firm_r)
+        Statistics.best_networth_A_percentage.append(best_networth_firm_A / Status.firmsAsum)
+        Statistics.rate_without_best_networth.append(r_without_best_networth_firm)
         # to estimate later a matrix of Axr:
         for firm in Status.firms:
             Statistics.matrix_Ar_A.append(firm.A)
@@ -160,6 +167,8 @@ class Status:
     t = 0
 
     firmsKsums = []
+    firmsAsums = []
+    firmsLsums = []
     firmsGrowRate = []
 
     firmIdMax = 0
@@ -178,7 +187,7 @@ class Status:
 class Firm:
     K = Config.K_i0  # capital
     A = Config.A_i0  # asset
-    A_prev = None    # previous value of A in each iteration
+    A_prev = Config.A_i0    # previous value of A in each iteration
     r = 0.0  # rate money is given by banksector
     L = Config.L_i0  # credit
     π = 0.0  # profit
@@ -265,35 +274,43 @@ class BankSector:
 
 
 def removeBankruptedFirms():
-    i = 0
+    removed_firms = 0
     BankSector.B = 0.0
-    for firm in Status.firms[:]: #TODO
-        if (firm.π + firm.A) < 0:
+    for firm in Status.firms[:]:
+        A_threshold_to_exit = firm.A_prev * (1 + Config.ω * (1 / Config.v - 1) * Config.φ / Config.g * (1 + Config.A_multiplier))
+        #Statistics.log(f'firm #{firm.id}: A(1+w...)={A_threshold_to_exit}  A=' +
+        #               f'{firm.A}  {"***" if firm.A < A_threshold_to_exit else "---"}')
+        #if (firm.π + firm.A) < 0:
+        if Status.t >= 5 and firm.A <= A_threshold_to_exit:
             # bankrupt: we sum Bn-1
             if firm.L - firm.K < 0:
                 BankSector.B += (firm.K - firm.L)
             Status.firms.remove(firm)
             Status.numFailuresGlobal += 1
-            i += 1
-    Statistics.log("        - removed %d firms %s" % (i, "" if i == 0 else " (next step B=%s)" % BankSector.B))
-    Statistics.bankruptcy.append(i)
+            removed_firms += 1
+    Statistics.log("        - removed %d firms %s" %
+                   (removed_firms, "" if removed_firms == 0 else " (next step B=%s)" % BankSector.B))
+    Statistics.bankruptcy.append(removed_firms)
 
-    return i
+    return removed_firms
 
 
 def addFirms(Nentry):
-    newFirmL = statistics.mode(list(map(lambda x: x.L, Status.firms)))
-    newFirmA = statistics.mode(list(map(lambda x: x.A, Status.firms)))
-    newFirmK = statistics.mode(list(map(lambda x: x.K, Status.firms)))
+    #newFirmL = statistics.mode(list(map(lambda x: x.L, Status.firms)))
+    newFirmA_prev = statistics.mode(list(map(lambda x: x.A_prev, Status.firms)))
+    exit_condition = newFirmA_prev * (1 + Config.ω * (1 / Config.v - 1) * Config.φ / Config.g * (1 + Config.A_multiplier))
+
+    newFirmK = newFirmA_prev / 0.2 # statistics.mode(list(map(lambda x: x.K, Status.firms)))
+    newFirmL = newFirmK - exit_condition
     for i in range(Nentry):
         newFirm = Firm()
         if not Config.newFirmsInitialValues:
             newFirm.L = newFirmL
-            newFirm.A = newFirmA
+            newFirm.A = exit_condition
             newFirm.K = newFirmK
         Status.firms.append(newFirm)
     Statistics.firmsNEntry.append(Nentry)
-    Statistics.log(f"        - add %d new firms (Nentry) with L={newFirmL},A={newFirmA},K={newFirmK}" % Nentry)
+    Statistics.log(f"        - add %d new firms (Nentry) with L={newFirmL},A={newFirmA_prev},K={newFirmK}" % Nentry)
 
 
 def updateFirmsStatus():
@@ -301,6 +318,8 @@ def updateFirmsStatus():
     Status.firmsKsum = sum(map(lambda x: x.K, Status.firms))
     Status.firmsLsum = sum(map(lambda x: x.L, Status.firms))
     Status.firmsKsums.append(Status.firmsKsum)
+    Status.firmsAsums.append(Status.firmsAsum)
+    Status.firmsLsums.append(Status.firmsLsum)
     Status.firmsGrowRate.append(
         0 if Status.t == 0 else (Status.firmsKsums[Status.t] - Status.firmsKsums[Status.t - 1]) / Status.firmsKsums[
             Status.t - 1])
@@ -351,7 +370,7 @@ def doSimulation(doDebug=False, interactive=False):
     updateBankL()
     BankSector.D = BankSector.L - BankSector.E
     progress_bar = None
-    if interactive and not doDebug:
+    if interactive:
         from progress.bar import Bar
         progress_bar = Bar("Executing model", max=Config.T)
     if progress_bar:
@@ -374,6 +393,8 @@ def doSimulation(doDebug=False, interactive=False):
 
 
 class Plots:
+
+    @staticmethod
     def plot_zipf_density(show=True):
         Statistics.log("zipf_density")
         plt.clf()
@@ -396,6 +417,7 @@ class Plots:
         plt.title("Zipf plot of firm sizes")
         plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/zipf_density.svg")
 
+    @staticmethod
     def plot_zipf_density1(show=True):
         Statistics.log("zipf_density")
         plt.clf()
@@ -419,6 +441,7 @@ class Plots:
         plt.title("Zipf plot of firm sizes (modified)")
         plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/zipf_density1.svg")
 
+    @staticmethod
     def plot_zipf_rank(show=True):
         Statistics.log("zipf_rank")
         plt.clf()
@@ -437,21 +460,30 @@ class Plots:
         plt.title("Rank of K (zipf)")
         plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/zipf_rank.svg")
 
+    @staticmethod
     def plot_aggregate_output(show=True):
         Statistics.log("aggregate_output")
         plt.clf()
         xx1 = []
+        xx2 = []
+        xx3 = []
+        xx4 = []
         yy = []
         for i in range(150, Config.T):
             yy.append(i)
             xx1.append(math.log(Status.firmsKsums[i]))
-        plt.plot(yy, xx1, 'b-')
-        plt.ylabel("log K")
+            xx2.append(math.log(Status.firmsAsums[i]))
+            xx3.append(math.log(Status.firmsLsums[i])-1) #TODO quitar el -1
+        plt.plot(yy, xx1, 'b-', label='logK')
+        plt.plot(yy, xx2, 'r-', label='logA')
+        plt.plot(yy, xx3, 'g-', label='(logL)-1')
         plt.xlabel("t")
         plt.title("Logarithm of aggregate output")
+        plt.legend(loc=0)
         plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/aggregate_output.svg")
 
-    def plot_scatter_Ar(show=True):
+    @staticmethod
+    def disabled_plot_scatter_Ar(show=True):
         plt.clf()
         plt.ylabel("r")
         plt.xlabel("A")
@@ -459,6 +491,7 @@ class Plots:
         plt.scatter(Statistics.matrix_Ar_A, Statistics.matrix_Ar_r)
         plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/equity_scatter.pdf")
 
+    @staticmethod
     def plot_histogram_equity(show=True):
         plt.clf()
         plt.hist(Statistics.matrix_Ar_A, bins=20, log=True)
@@ -467,6 +500,7 @@ class Plots:
         plt.ylabel('log counts')
         plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/equity_histogram.pdf")
 
+    @staticmethod
     def plot_percentage_equity(show=True):
         plt.clf()
         plt.figure(figsize=(12, 8))
@@ -522,6 +556,7 @@ class Plots:
     #     plt.title("GuruA")
     #     plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/guruA.svg")
 
+    @staticmethod
     def plot_ddf_networth(show=True):
         worst_firm_A = np.inf
         xx = []
@@ -546,6 +581,7 @@ class Plots:
         # plt.axis('scaled')
         plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/ddf_networth.svg")
 
+    @staticmethod
     def plot_best_networth_rate(show=True):
         plt.clf()
         plt.figure(figsize=(12, 8))
@@ -565,13 +601,14 @@ class Plots:
         color = 'tab:blue'
         ax2.set_ylabel('rate', color=color)  # we already handled the x-label with ax1
         ax2.plot(yy, Statistics.best_networth_rate, color=color, label="r of best networth")
-        ax2.plot(yy, Statistics.rate_without_best_networth, color='tab:green', label="r of others")
+        # ax2.plot(yy, Statistics.rate_without_best_networth, color='tab:green', label="r of others")
         ax2.tick_params(axis='y', labelcolor=color)
         fig.tight_layout()  # otherwise the right y-label is slightly clipped
         ax1.legend(loc=0)
         ax2.legend(loc=1)
         plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/best_networth.pdf")
 
+    @staticmethod
     def plot_profits(show=True):
         Statistics.log("profits")
         plt.clf()
@@ -586,7 +623,8 @@ class Plots:
         plt.title("profits of companies")
         plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/profits.svg")
 
-    def plot_baddebt(show=True):
+    @staticmethod
+    def disabled_plot_baddebt(show=True):
         Statistics.log("bad_debt")
         plt.clf()
         xx = []
@@ -600,6 +638,7 @@ class Plots:
         plt.title("Bad debt")
         plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/bad_debt_avg.svg")
 
+    @staticmethod
     def plot_bankrupcies(show=True):
         Statistics.log("bankrupcies")
         plt.clf()
@@ -614,6 +653,7 @@ class Plots:
         plt.title("Bankrupted firms")
         plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/bankrupted.svg")
 
+    @staticmethod
     def plot_bad_debt(show=True):
         Statistics.log("bad_debt")
         plt.clf()
@@ -643,6 +683,7 @@ class Plots:
         plt.title("Mean interest rates of companies")
         plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/interest_rate.svg")
 
+    @staticmethod
     def plot_growth_rate(show):
         Statistics.log("growth_rate")
         plt.clf()
@@ -658,6 +699,7 @@ class Plots:
         plt.title("Growth rates of agg output")
         plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/growth_rates.svg")
 
+    @staticmethod
     def plot_distribution_kl(show):
         plt.clf()
         fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(10, 4))
@@ -677,13 +719,13 @@ class Plots:
         plt.tight_layout()
         plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/distribution.svg")
 
-    def run(save=False):
+    @staticmethod
+    def run(save=False, interactive=False):
         method_list = [func for func in dir(Plots) if func.startswith("plot_")]
         progress_bar = None
-        if save:
+        if interactive:
             from progress.bar import Bar
             progress_bar = Bar("Saving figures", max=len(method_list))
-        if progress_bar:
             progress_bar.update()
 
         for plot in method_list:
@@ -744,7 +786,9 @@ def save_results(filename, interactive=False):
         results.write(f"{'bankL':>15}")
         results.write(f"{'bankB':>15}")
         results.write(f"{'bankProfit':>15}")
-        results.write(f"{'bestA':>15}")
+        results.write(f"{'bestA_id':>15}")
+        results.write(f"{'worstA_id':>15}")
+        results.write(f"{'worstA':>15}")
         results.write(f"{'bestA_r':>15}")
         results.write(f"{'others_r':>15}")
         results.write(f"{'bestA_percen':>15}")
@@ -822,13 +866,13 @@ def doInteractive():
     if args.log or args.logfile:
         Statistics.enableLog(args.logfile)
 
-    doSimulation(doDebug=args.debug, interactive=True)
+    doSimulation(doDebug=args.debug, interactive=(not args.log))
     if Status.numFailuresGlobal > 0:
         Statistics.log("[total failures in all times = %s]" % Status.numFailuresGlobal)
     else:
         Statistics.log("[no failures]")
     if args.plot:
-        Plots.run(save=True)
+        Plots.run(save=True, interactive=(not args.log))
     if args.save:
         save_results(filename=args.save, interactive=True)
 
