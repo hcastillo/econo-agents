@@ -17,8 +17,8 @@ OUTPUT_DIRECTORY = "output"
 
 class Config:
     T = 1000  # time (1000)
-    N = 100  # number of firms
-    Ñ = 1  # size parameter
+    N = 1000  # number of firms
+    Ñ = 1     # size parameter
 
     φ = 0.1  # capital productivity (constant and uniform)
     c = 1  # parameter bankruptcy cost equation
@@ -138,7 +138,7 @@ class Statistics:
         Statistics.worst_networth_firm.append(worst_networth_firm.id)
         Statistics.worst_networth.append(best_networth_firm.A)
         Statistics.best_networth_rate.append(best_networth_firm.r)
-        Statistics.best_networth_A_percentage.append(best_networth_firm.A / Status.firmsAsum)
+        Statistics.best_networth_A_percentage.append(best_networth_firm.A / Status.firmsAsum) #TODO
         r_without_best_networth_firm = 0
         for firm in Status.firms:
             if firm.id != best_networth_firm.id:
@@ -178,6 +178,7 @@ class Status:
 class Firm:
     K = Config.K_i0  # capital
     A = Config.A_i0  # asset
+    A_prev = None    # previous value of A in each iteration
     r = 0.0  # rate money is given by banksector
     L = Config.L_i0  # credit
     π = 0.0  # profit
@@ -266,7 +267,7 @@ class BankSector:
 def removeBankruptedFirms():
     i = 0
     BankSector.B = 0.0
-    for firm in Status.firms[:]:
+    for firm in Status.firms[:]: #TODO
         if (firm.π + firm.A) < 0:
             # bankrupt: we sum Bn-1
             if firm.L - firm.K < 0:
@@ -319,6 +320,7 @@ def updateFirms():
         firm.u = firm.determineU()
 
         firm.π = firm.determineProfit()
+        firm.A_prev = firm.A
         firm.A = firm.determineAssets()
         Status.firmsπsum += firm.π
     # update Kt-1 and At-1 (Status.firmsKsum && Status.firmsAsum):
@@ -521,18 +523,16 @@ class Plots:
     #     plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/guruA.svg")
 
     def plot_ddf_networth(show=True):
-        networths = []
         worst_firm_A = np.inf
         xx = []
         x = 1
         for firm in Status.firms:
-            networths.append(firm.A)
             if firm.A < worst_firm_A:
                 worst_firm_A = firm.A
             x += 1
             xx.append(x)
+        networths = list(map(lambda x: x.A, Status.firms))
         networths.sort(reverse=True)
-        networths1 = list(map(lambda firm: firm.A, Status.firms))
 
         for i in range(len(networths)):
             networths[i] = networths[i] / worst_firm_A
