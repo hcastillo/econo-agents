@@ -16,8 +16,8 @@ OUTPUT_DIRECTORY = "output"
 
 
 class Config:
-    T = 1000  # time (1000)
-    N = 1000  # number of firms
+    T = 2000  # time (1000)
+    N = 3000  # number of firms
     Ñ = 1     # size parameter
 
     φ = 0.1  # capital productivity (constant and uniform)
@@ -36,6 +36,8 @@ class Config:
     π_i0 = 0  # profit
     B_i0 = 0  # bad debt
 
+    A_threshold_i0 = 2
+
     A_multiplier = 0.001
     # risk coefficient for bank sector (Basel)
     v = 0.2
@@ -48,7 +50,7 @@ class Config:
     newFirmsInitialValues = False
 
     # If True, the equilibrium rate is used (a fix value) instead of formula for interest in the paper
-    rateEquilibrium = True
+    rateEquilibrium = False
 
 
 # %%
@@ -108,6 +110,7 @@ class Statistics:
     rate = []
     bankL = []
     bankπ = []
+    A_threshold = []
 
     max_A = 0
 
@@ -139,6 +142,7 @@ class Statistics:
         Statistics.bankπ.append(BankSector.π)
         Statistics.bankL.append(BankSector.L)
         Statistics.bankB.append(BankSector.B)
+        Statistics.A_threshold.append(Status.A_threshold)
         Statistics.firmsNum.append(len(Status.firms))
         Statistics.rate.append(BankSector.getAverageRate())
 
@@ -172,6 +176,9 @@ class Status:
     firmsGrowRate = []
 
     firmIdMax = 0
+
+
+    A_threshold = Config.A_threshold_i0
 
     @staticmethod
     def getNewFirmId():
@@ -208,7 +215,7 @@ class Firm:
             # Beta = (1/v)-1
             return Config.φ / Config.g - 2 * Config.ω * (1 / Config.v - 1) * Config.φ * Config.φ / (Config.g * Config.g)
         else:
-            # (equation 12)
+            # (equation 12) #TODO -> aqui falla al obtener la grafica
             return (2 + self.A) / (2 * Config.c * Config.g * (1 / (Config.c * Config.φ) + self.π + self.A) +
                                    2 * Config.c * Config.g * BankSector.L * (
                                            Config.λ * self.__ratioK() + (1 - Config.λ) * self.__ratioA()))
@@ -265,6 +272,7 @@ class BankSector:
             average += firm.r
         return average / len(Status.firms)
 
+
     @staticmethod
     def determineEquity():
         # equation 14
@@ -273,16 +281,20 @@ class BankSector:
         return result
 
 
+def threshold_estimate(value):
+    return value * (1 + Config.ω * (1 / Config.v - 1) * Config.φ / Config.g * (1 + Config.A_multiplier))
 def removeBankruptedFirms():
     removed_firms = 0
     BankSector.B = 0.0
+
+    Status.A_threshold = threshold_estimate(Status.A_threshold)
     for firm in Status.firms[:]:
-        A_threshold_to_exit = firm.A_prev * (1 + Config.ω * (1 / Config.v - 1) * Config.φ / Config.g * (1 + Config.A_multiplier))
-        #Statistics.log(f'firm #{firm.id}: A(1+w...)={A_threshold_to_exit}  A=' +
-        #               f'{firm.A}  {"***" if firm.A < A_threshold_to_exit else "---"}')
+        firm.A = threshold_estimate(firm.A)
+        A_threshold = firm.A_prev * (1 + Config.ω * (1 / Config.v - 1) * Config.φ / Config.g * (1 + Config.A_multiplier))
         #if (firm.π + firm.A) < 0:
-        if Status.t >= 5 and firm.A <= A_threshold_to_exit:
+        if Status.t >= 5 and firm.A <= Status.A_threshold:
             # bankrupt: we sum Bn-1
+            Statistics.log(f'firm #{firm.id} failed: A(1+w...)<=A_threshold(1+w...): {firm.A}={Status.A_threshold}')
             if firm.L - firm.K < 0:
                 BankSector.B += (firm.K - firm.L)
             Status.firms.remove(firm)
@@ -297,20 +309,21 @@ def removeBankruptedFirms():
 
 def addFirms(Nentry):
     #newFirmL = statistics.mode(list(map(lambda x: x.L, Status.firms)))
-    newFirmA_prev = statistics.mode(list(map(lambda x: x.A_prev, Status.firms)))
-    exit_condition = newFirmA_prev * (1 + Config.ω * (1 / Config.v - 1) * Config.φ / Config.g * (1 + Config.A_multiplier))
+    #newFirmA_prev = statistics.mode(list(map(lambda x: x.A_prev, Status.firms)))
+    #exit_condition = newFirmA_prev * (1 + Config.ω * (1 / Config.v - 1) * Config.φ / Config.g * (1 + Config.A_multiplier))
 
-    newFirmK = newFirmA_prev / 0.2 # statistics.mode(list(map(lambda x: x.K, Status.firms)))
-    newFirmL = newFirmK - exit_condition
+    newFirmA = Status.A_threshold
+    newFirmK = newFirmA / 0.2 # statistics.mode(list(map(lambda x: x.K, Status.firms)))
+    newFirmL = newFirmK - newFirmA
     for i in range(Nentry):
         newFirm = Firm()
         if not Config.newFirmsInitialValues:
             newFirm.L = newFirmL
-            newFirm.A = exit_condition
+            newFirm.A = newFirmA
             newFirm.K = newFirmK
         Status.firms.append(newFirm)
     Statistics.firmsNEntry.append(Nentry)
-    Statistics.log(f"        - add %d new firms (Nentry) with L={newFirmL},A={newFirmA_prev},K={newFirmK}" % Nentry)
+    Statistics.log(f"        - add %d new firms (Nentry) with L={newFirmL},A={newFirmA},K={newFirmK}" % Nentry)
 
 
 def updateFirmsStatus():
@@ -395,7 +408,7 @@ def doSimulation(doDebug=False, interactive=False):
 class Plots:
 
     @staticmethod
-    def plot_zipf_density(show=True):
+    def disabled_plot_zipf_density(show=True):
         Statistics.log("zipf_density")
         plt.clf()
         zipf = {}  # log K = freq
@@ -418,7 +431,7 @@ class Plots:
         plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/zipf_density.svg")
 
     @staticmethod
-    def plot_zipf_density1(show=True):
+    def disabled_plot_zipf_density1(show=True):
         Statistics.log("zipf_density")
         plt.clf()
         zipf = {}  # log K = freq
@@ -461,7 +474,7 @@ class Plots:
         plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/zipf_rank.svg")
 
     @staticmethod
-    def plot_aggregate_output(show=True):
+    def plot_aggregate_output(show=True): #TODO
         Statistics.log("aggregate_output")
         plt.clf()
         xx1 = []
@@ -469,14 +482,16 @@ class Plots:
         xx3 = []
         xx4 = []
         yy = []
-        for i in range(150, Config.T):
+        for i in range(1,Config.T):
             yy.append(i)
             xx1.append(math.log(Status.firmsKsums[i]))
             xx2.append(math.log(Status.firmsAsums[i]))
-            xx3.append(math.log(Status.firmsLsums[i])-1) #TODO quitar el -1
+            xx3.append(math.log(Status.firmsLsums[i]))
+            xx4.append(i*math.log(threshold_estimate(1)))
         plt.plot(yy, xx1, 'b-', label='logK')
         plt.plot(yy, xx2, 'r-', label='logA')
-        plt.plot(yy, xx3, 'g-', label='(logL)-1')
+        plt.plot(yy, xx3, 'g-', label='logL')
+        plt.plot(yy, xx4, 'p-', label='A_threshold')
         plt.xlabel("t")
         plt.title("Logarithm of aggregate output")
         plt.legend(loc=0)
@@ -492,7 +507,7 @@ class Plots:
         plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/equity_scatter.pdf")
 
     @staticmethod
-    def plot_histogram_equity(show=True):
+    def disabled_plot_histogram_equity(show=True):
         plt.clf()
         plt.hist(Statistics.matrix_Ar_A, bins=20, log=True)
         plt.title('FirmsA distribution')
@@ -700,7 +715,7 @@ class Plots:
         plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/growth_rates.svg")
 
     @staticmethod
-    def plot_distribution_kl(show):
+    def disabled_plot_distribution_kl(show):
         plt.clf()
         fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(10, 4))
 
@@ -792,6 +807,7 @@ def save_results(filename, interactive=False):
         results.write(f"{'bestA_r':>15}")
         results.write(f"{'others_r':>15}")
         results.write(f"{'bestA_percen':>15}")
+        results.write(f"{'A_threshold':>15}")
         results.write(f"\n")
         for i in range(Config.T):
             line = f"{i:>3}"
@@ -811,6 +827,7 @@ def save_results(filename, interactive=False):
             line += f"{Statistics.best_networth_rate[i]:15.2f}"
             line += f"{Statistics.rate_without_best_networth[i]:15.2f}"
             line += f"{Statistics.best_networth_A_percentage[i]:15.2f}"
+            line += f"{Statistics.A_threshold[i]:15.2f}"
             results.write(f"{line}\n")
             if progress_bar:
                 progress_bar.next()
@@ -875,7 +892,6 @@ def doInteractive():
         Plots.run(save=True, interactive=(not args.log))
     if args.save:
         save_results(filename=args.save, interactive=True)
-
 
 def is_notebook():
     try:
