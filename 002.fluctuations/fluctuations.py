@@ -16,8 +16,8 @@ OUTPUT_DIRECTORY = "output"
 
 
 class Config:
-    T = 2000  # time (1000)
-    N = 3000  # number of firms
+    T = 1000  # time (1000)
+    N = 500  # number of firms
     Ñ = 1     # size parameter
 
     φ = 0.1  # capital productivity (constant and uniform)
@@ -36,9 +36,9 @@ class Config:
     π_i0 = 0  # profit
     B_i0 = 0  # bad debt
 
-    A_threshold_i0 = 2
+    A_threshold_i0 = 5
 
-    A_multiplier = 0.001
+    A_multiplier = 0.01 # piu e´grande meno emerge la gigante
     # risk coefficient for bank sector (Basel)
     v = 0.2
 
@@ -50,7 +50,7 @@ class Config:
     newFirmsInitialValues = False
 
     # If True, the equilibrium rate is used (a fix value) instead of formula for interest in the paper
-    rateEquilibrium = False
+    rateEquilibrium = True
 
 
 # %%
@@ -111,8 +111,7 @@ class Statistics:
     bankL = []
     bankπ = []
     A_threshold = []
-
-    max_A = 0
+    newFirmA_all_periods = []  # questa è la lista per memorizzare newFirmA di ogni periodo
 
     matrix_Ar_A = []
     matrix_Ar_r = []
@@ -123,6 +122,12 @@ class Statistics:
     worst_networth_firm = []
     rate_without_best_networth = []
     num_igual_r = []
+
+    @staticmethod
+    def init():
+        for element in dir(Statistics):
+            if type(getattr(Statistics, element)) == type([]):
+                setattr(Statistics, element, [])
 
     @staticmethod
     def getStatistics():
@@ -283,13 +288,15 @@ class BankSector:
 
 def threshold_estimate(value):
     return value * (1 + Config.ω * (1 / Config.v - 1) * Config.φ / Config.g * (1 + Config.A_multiplier))
+
 def removeBankruptedFirms():
     removed_firms = 0
     BankSector.B = 0.0
 
-    Status.A_threshold = threshold_estimate(Status.A_threshold)
+    ## Status.A_threshold = threshold_estimate(Status.A_threshold)
+    Status.A_threshold =  Status.A_threshold * (1 + Config.ω * (1 / Config.v - 1) * Config.φ / Config.g * (1 + Config.A_multiplier))
     for firm in Status.firms[:]:
-        firm.A = threshold_estimate(firm.A)
+        #firm.A = threshold_estimate(firm.A)
         A_threshold = firm.A_prev * (1 + Config.ω * (1 / Config.v - 1) * Config.φ / Config.g * (1 + Config.A_multiplier))
         #if (firm.π + firm.A) < 0:
         if Status.t >= 5 and firm.A <= Status.A_threshold:
@@ -354,6 +361,7 @@ def updateFirms():
         firm.π = firm.determineProfit()
         firm.A_prev = firm.A
         firm.A = firm.determineAssets()
+        # firm.K = firm.L + firm.A
         Status.firmsπsum += firm.π
     # update Kt-1 and At-1 (Status.firmsKsum && Status.firmsAsum):
     updateFirmsStatus()
@@ -907,9 +915,20 @@ if __name__ == "__main__":
     if not os.path.isdir(OUTPUT_DIRECTORY):
         os.mkdir(OUTPUT_DIRECTORY)
     if is_notebook():
+        OUTPUT_DIRECTORY = "/content"
         global dataframe
         doSimulation()
         Plots.run()
+        # If you want to manipulate the data
         dataframe = generate_dataframe_from_statistics()
     else:
         doInteractive()
+
+# %%
+
+# In Collab you can do now this:
+# Config.N = 150
+# Statistics.init()
+# doSimulation()
+# Plots.run()
+# save_results(filename='my_execution')
