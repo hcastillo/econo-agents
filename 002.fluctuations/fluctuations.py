@@ -18,7 +18,7 @@ OUTPUT_DIRECTORY = "output"
 class Config:
     T = 1000  # time (1000)
     N = 500  # number of firms
-    Ñ = 1     # size parameter
+    Ñ = 1  # size parameter
 
     φ = 0.1  # capital productivity (constant and uniform)
     c = 1  # parameter bankruptcy cost equation
@@ -38,7 +38,7 @@ class Config:
 
     A_threshold_i0 = 5
 
-    A_multiplier = 0.01 # piu e´grande meno emerge la gigante
+    A_multiplier = 0.01
     # risk coefficient for bank sector (Basel)
     v = 0.2
 
@@ -77,7 +77,7 @@ class Statistics:
             r_without_best_networth_firm += firms[i].r
 
         r_without_best_networth_firm -= firm_with_best_networth_r
-        r_without_best_networth_firm /= (len(firms)-1)   # is the average
+        r_without_best_networth_firm /= (len(firms) - 1)  # is the average
         return (firm_with_best_networth, firm_with_worst_networth, A_max, firm_with_best_networth_r,
                 r_without_best_networth_firm)
 
@@ -111,7 +111,7 @@ class Statistics:
     bankL = []
     bankπ = []
     A_threshold = []
-    newFirmA_all_periods = []  # questa è la lista per memorizzare newFirmA di ogni periodo
+    newFirmA_all_periods = []
 
     matrix_Ar_A = []
     matrix_Ar_r = []
@@ -126,7 +126,7 @@ class Statistics:
     @staticmethod
     def init():
         for element in dir(Statistics):
-            if type(getattr(Statistics, element)) == type([]):
+            if isinstance(getattr(Statistics, element),list):
                 setattr(Statistics, element, [])
 
     @staticmethod
@@ -153,7 +153,7 @@ class Statistics:
 
         (best_networth_firm_id, worst_networth_firm_id,
          best_networth_firm_A, best_networth_firm_r,
-         r_without_best_networth_firm ) = Statistics.determine_best_and_worst_networth_firm(Status.firms)
+         r_without_best_networth_firm) = Statistics.determine_best_and_worst_networth_firm(Status.firms)
         Statistics.best_networth_firm.append(best_networth_firm_id)
         Statistics.worst_networth_firm.append(worst_networth_firm_id)
         Statistics.worst_networth.append(best_networth_firm_A)
@@ -182,7 +182,6 @@ class Status:
 
     firmIdMax = 0
 
-
     A_threshold = Config.A_threshold_i0
 
     @staticmethod
@@ -199,7 +198,7 @@ class Status:
 class Firm:
     K = Config.K_i0  # capital
     A = Config.A_i0  # asset
-    A_prev = Config.A_i0    # previous value of A in each iteration
+    A_prev = Config.A_i0  # previous value of A in each iteration
     r = 0.0  # rate money is given by banksector
     L = Config.L_i0  # credit
     π = 0.0  # profit
@@ -212,7 +211,6 @@ class Firm:
         # (equation 11)
         result = Config.λ * BankSector.L * self.K / Status.firmsKsum + (
                 1 - Config.λ) * BankSector.L * self.A / Status.firmsAsum
-        ## Statistics.log( "a*%s*%s/%s+(1-a)*%s*%s/%s  L=%s" % (BankSector.L,self.K,Status.firmsKsum,BankSector.L,self.A,Status.firmsAsum,result))
         return result
 
     def determineInterestRate(self):
@@ -220,7 +218,7 @@ class Firm:
             # Beta = (1/v)-1
             return Config.φ / Config.g - 2 * Config.ω * (1 / Config.v - 1) * Config.φ * Config.φ / (Config.g * Config.g)
         else:
-            # (equation 12) #TODO -> aqui falla al obtener la grafica
+            # (equation 12)
             return (2 + self.A) / (2 * Config.c * Config.g * (1 / (Config.c * Config.φ) + self.π + self.A) +
                                    2 * Config.c * Config.g * BankSector.L * (
                                            Config.λ * self.__ratioK() + (1 - Config.λ) * self.__ratioA()))
@@ -277,7 +275,6 @@ class BankSector:
             average += firm.r
         return average / len(Status.firms)
 
-
     @staticmethod
     def determineEquity():
         # equation 14
@@ -289,15 +286,13 @@ class BankSector:
 def threshold_estimate(value):
     return value * (1 + Config.ω * (1 / Config.v - 1) * Config.φ / Config.g * (1 + Config.A_multiplier))
 
+
 def removeBankruptedFirms():
     removed_firms = 0
     BankSector.B = 0.0
 
-    ## Status.A_threshold = threshold_estimate(Status.A_threshold)
-    Status.A_threshold =  Status.A_threshold * (1 + Config.ω * (1 / Config.v - 1) * Config.φ / Config.g * (1 + Config.A_multiplier))
+    Status.A_threshold = threshold_estimate(Status.A_threshold)
     for firm in Status.firms[:]:
-        #firm.A = threshold_estimate(firm.A)
-        A_threshold = firm.A_prev * (1 + Config.ω * (1 / Config.v - 1) * Config.φ / Config.g * (1 + Config.A_multiplier))
         #if (firm.π + firm.A) < 0:
         if Status.t >= 5 and firm.A <= Status.A_threshold:
             # bankrupt: we sum Bn-1
@@ -319,8 +314,8 @@ def addFirms(Nentry):
     #newFirmA_prev = statistics.mode(list(map(lambda x: x.A_prev, Status.firms)))
     #exit_condition = newFirmA_prev * (1 + Config.ω * (1 / Config.v - 1) * Config.φ / Config.g * (1 + Config.A_multiplier))
 
-    newFirmA = Status.A_threshold
-    newFirmK = newFirmA / 0.2 # statistics.mode(list(map(lambda x: x.K, Status.firms)))
+    newFirmA = Status.A_threshold * (1 + random.uniform(0, 2))
+    newFirmK = newFirmA / 0.2  # statistics.mode(list(map(lambda x: x.K, Status.firms)))
     newFirmL = newFirmK - newFirmA
     for i in range(Nentry):
         newFirm = Firm()
@@ -330,6 +325,7 @@ def addFirms(Nentry):
             newFirm.K = newFirmK
         Status.firms.append(newFirm)
     Statistics.firmsNEntry.append(Nentry)
+    Statistics.newFirmA_all_periods.append(newFirmA)
     Statistics.log(f"        - add %d new firms (Nentry) with L={newFirmL},A={newFirmA},K={newFirmK}" % Nentry)
 
 
@@ -482,7 +478,7 @@ class Plots:
         plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/zipf_rank.svg")
 
     @staticmethod
-    def plot_aggregate_output(show=True): #TODO
+    def plot_aggregate_output(show=True):
         Statistics.log("aggregate_output")
         plt.clf()
         xx1 = []
@@ -490,12 +486,12 @@ class Plots:
         xx3 = []
         xx4 = []
         yy = []
-        for i in range(1,Config.T):
+        for i in range(1, Config.T):
             yy.append(i)
             xx1.append(math.log(Status.firmsKsums[i]))
             xx2.append(math.log(Status.firmsAsums[i]))
             xx3.append(math.log(Status.firmsLsums[i]))
-            xx4.append(i*math.log(threshold_estimate(1)))
+            xx4.append(i * math.log(threshold_estimate(1)))
         plt.plot(yy, xx1, 'b-', label='logK')
         plt.plot(yy, xx2, 'r-', label='logA')
         plt.plot(yy, xx3, 'g-', label='logL')
@@ -692,6 +688,38 @@ class Plots:
         plt.title("Bad debt")
         plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/bad_debt.svg")
 
+    @staticmethod
+    def plot_threshold(show=True):
+        Statistics.log("A_threshold")
+        plt.clf()
+        xx = []
+        yy = []
+        for i in range(150, Config.T):
+            if Statistics.A_threshold[i] > 0:
+                xx.append(i)
+                yy.append(Statistics.A_threshold[i])
+        plt.plot(xx, yy, 'b-')
+        plt.ylabel("A_threshold")
+        plt.xlabel("t")
+        plt.title("A_threshold")
+        plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/A_threshold.svg")
+
+    @staticmethod
+    def plot_A_newfirm(show=True):
+        Statistics.log("newFirmA")
+        plt.clf()
+        xx = []
+        yy = []
+        for i in range(150, len(Statistics.newFirmA_all_periods)):
+            xx.append(i)
+            yy.append(Statistics.newFirmA_all_periods[i])
+        plt.plot(xx, yy, 'b-')
+        plt.ylabel("newFirmA")
+        plt.xlabel("t")
+        plt.title("newFirmA")
+        plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/newFirmA.svg")
+
+    @staticmethod
     def plot_interest_rate(show):
         Statistics.log("interest_rate")
         plt.clf()
@@ -900,6 +928,7 @@ def doInteractive():
         Plots.run(save=True, interactive=(not args.log))
     if args.save:
         save_results(filename=args.save, interactive=True)
+
 
 def is_notebook():
     try:
