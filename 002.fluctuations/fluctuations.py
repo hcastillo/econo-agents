@@ -9,7 +9,12 @@ from pdb import set_trace
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import copy
+import lxml.etree
+import lxml.builder
 import statistics
+import gzip
+
 
 random.seed(10579)
 OUTPUT_DIRECTORY = "output"
@@ -20,11 +25,11 @@ class Config:
     N = 500  # number of firms
     Ñ = 1  # size parameter
 
-    φ = 0.1  # capital productivity (constant and uniform)
+    φ = 0.1  # phi = capital productivity (constant and uniform)
     c = 1  # parameter bankruptcy cost equation
-    α = 0.08  # alpha, ratio equity-loan
+    ######α = 0.08  # alpha, ratio equity-loan
     g = 1.1  # variable cost
-    ω = 0.002  # markdown interest rate (the higher it is, the monopolistic power of banks)
+    ω = 0.002  # omega = markdown interest rate (the higher it is, the monopolistic power of banks)
     λ = 0.3  # credit assets rate
     d = 100  # location cost
     e = 0.1  # sensitivity
@@ -36,11 +41,14 @@ class Config:
     π_i0 = 0  # profit
     B_i0 = 0  # bad debt
 
-    A_threshold_i0 = 5
-
     A_multiplier = 0.01
+
     # risk coefficient for bank sector (Basel)
-    v = 0.2
+    nu= 0.08
+    v = nu # 0.2
+
+    # skewness parameter:
+    beta = 1/nu-1
 
     # if True, new firms are created using formula of paper, if not, same N number of firms is sustained in time
     # the same are failed, the same are introduced:
@@ -50,8 +58,11 @@ class Config:
     newFirmsInitialValues = False
 
     # If True, the equilibrium rate is used (a fix value) instead of formula for interest in the paper
-    rateEquilibrium = True
+    rateEquilibrium = False
 
+    # Exit condition will be A+π<0 if this value is 0, else A<A_threshold.
+    # Threshold is updated each time with Beta
+    A_threshold_i0 = 5
 
 # %%
 class Statistics:
@@ -100,16 +111,20 @@ class Statistics:
 
     bankruptcy = []
     firmsK = []
-    firmsπ = []
+    firmsProfits = []
     firmsA = []
     best_networth_A_percentage = []
     firmsL = []
     bankB = []
+    bankE = []
+    bankD = []
     firmsNum = []
     firmsNEntry = []
     rate = []
+    rates = []
     bankL = []
-    bankπ = []
+    firm0 = []
+    bankProfit = []
     A_threshold = []
     newFirmA_all_periods = []
 
@@ -135,21 +150,26 @@ class Statistics:
                                                                                        Status.firmsAsum,
                                                                                        Status.firmsLsum,
                                                                                        Status.firmsKsum,
-                                                                                       Status.firmsπsum))
+                                                                                       Status.firmsProfitssum))
         Statistics.log("       [bank]  avgRate=%.2f,D=%.2f,L=%.2f,E=%0.2f,B=%.2f,π=%.2f" % (BankSector.getAverageRate(),
                                                                                             BankSector.D, BankSector.L,
                                                                                             BankSector.E,
                                                                                             BankSector.B, BankSector.π))
         Statistics.firmsK.append(Status.firmsKsum)
-        Statistics.firmsπ.append(Status.firmsπsum)
+        Statistics.firmsProfits.append(Status.firmsProfitssum)
         Statistics.firmsL.append(Status.firmsLsum)
         Statistics.firmsA.append(Status.firmsAsum)
-        Statistics.bankπ.append(BankSector.π)
+        Statistics.bankProfit.append(BankSector.π)
         Statistics.bankL.append(BankSector.L)
+        Statistics.bankE.append(BankSector.E)
+        Statistics.bankD.append(BankSector.D)
         Statistics.bankB.append(BankSector.B)
         Statistics.A_threshold.append(Status.A_threshold)
+        Statistics.firm0.append(copy.deepcopy(Status.firms[0]))
         Statistics.firmsNum.append(len(Status.firms))
         Statistics.rate.append(BankSector.getAverageRate())
+        Statistics.rates.append(BankSector.statisticsRate())
+
 
         (best_networth_firm_id, worst_networth_firm_id,
          best_networth_firm_A, best_networth_firm_r,
@@ -171,7 +191,7 @@ class Status:
     firmsKsum = 0.0
     firmsAsum = 0.0
     firmsLsum = 0.0
-    firmsπsum = 0.0
+    firmsProfitssum = 0.0
     numFailuresGlobal = 0
     t = 0
 
@@ -191,17 +211,20 @@ class Status:
 
     @staticmethod
     def initialize():
+        Status.firms = []
+        Status.A_threshold = Config.A_threshold_i0
         for i in range(Config.N):
             Status.firms.append(Firm())
+        Statistics.init()
 
 
 class Firm:
-    K = Config.K_i0  # capital
-    A = Config.A_i0  # asset
+    K = Config.K_i0       # capital
+    A = Config.A_i0       # asset
     A_prev = Config.A_i0  # previous value of A in each iteration
-    r = 0.0  # rate money is given by banksector
-    L = Config.L_i0  # credit
-    π = 0.0  # profit
+    r = 0.0               # rate money is given by bank sector
+    L = Config.L_i0       # credit
+    π = 0.0               # profit
     u = 0.0
 
     def __init__(self):
@@ -235,7 +258,7 @@ class Firm:
                 self.A / (2 * Config.g * self.r))
 
     def determineU(self):
-        return random.random() * 2
+        return random.uniform(0, 2)
 
     def determineAssets(self):
         # equation 6
@@ -252,6 +275,7 @@ class BankSector:
     E = Config.N * Config.L_i0 * Config.v
     B = Config.B_i0  # bad debt
     D = 0
+    L = 0
     π = 0
 
     @staticmethod
@@ -276,6 +300,13 @@ class BankSector:
         return average / len(Status.firms)
 
     @staticmethod
+    def statisticsRate():
+        rates = []
+        for firm in Status.firms:
+          rates.append(firm.r)
+        return statistics.mean(rates), statistics.stdev(rates), statistics.median(rates)
+
+    @staticmethod
     def determineEquity():
         # equation 14
         result = BankSector.π + BankSector.E + BankSector.B
@@ -285,23 +316,32 @@ class BankSector:
 
 def threshold_estimate(value):
     return value * (1 + Config.ω * (1 / Config.v - 1) * Config.φ / Config.g * (1 + Config.A_multiplier))
-
+    # t + ln(1 + Config.ω * (1 / Config.v - 1) * Config.φ / Config.g)
 
 def removeBankruptedFirms():
     removed_firms = 0
     BankSector.B = 0.0
-
     Status.A_threshold = threshold_estimate(Status.A_threshold)
     for firm in Status.firms[:]:
-        #if (firm.π + firm.A) < 0:
-        if Status.t >= 5 and firm.A <= Status.A_threshold:
-            # bankrupt: we sum Bn-1
-            Statistics.log(f'firm #{firm.id} failed: A(1+w...)<=A_threshold(1+w...): {firm.A}={Status.A_threshold}')
-            if firm.L - firm.K < 0:
-                BankSector.B += (firm.K - firm.L)
-            Status.firms.remove(firm)
-            Status.numFailuresGlobal += 1
-            removed_firms += 1
+        # A_threshold>0? then we use this algorithm
+        if Status.A_threshold:
+            if Status.t >= 5 and firm.A <= Status.A_threshold:
+                # bankrupt: we sum Bn-1
+                Statistics.log(f'firm #{firm.id} failed: A(1+w...)<=A_threshold(1+w...): {firm.A}={Status.A_threshold}')
+                if firm.L - firm.K < 0:
+                    BankSector.B += (firm.K - firm.L)
+                Status.firms.remove(firm)
+                Status.numFailuresGlobal += 1
+                removed_firms += 1
+        # A_threshold>0? then we use this algorithm
+        else:
+            if (firm.π + firm.A) < 0:
+                Statistics.log(f'firm #{firm.id} failed: A+.π<0')
+                if firm.L - firm.K < 0:
+                    BankSector.B += (firm.K - firm.L)
+                Status.firms.remove(firm)
+                Status.numFailuresGlobal += 1
+                removed_firms += 1
     Statistics.log("        - removed %d firms %s" %
                    (removed_firms, "" if removed_firms == 0 else " (next step B=%s)" % BankSector.B))
     Statistics.bankruptcy.append(removed_firms)
@@ -344,7 +384,7 @@ def updateFirmsStatus():
 def updateFirms():
     totalK = 0.0
     totalL = 0.0
-    Status.firmsπsum = 0.0
+    Status.firmsProfitssum = 0.0
     for firm in Status.firms:
         firm.L = firm.determineCredit()
         totalL += firm.L
@@ -358,10 +398,10 @@ def updateFirms():
         firm.A_prev = firm.A
         firm.A = firm.determineAssets()
         # firm.K = firm.L + firm.A
-        Status.firmsπsum += firm.π
+        Status.firmsProfitssum += firm.π
     # update Kt-1 and At-1 (Status.firmsKsum && Status.firmsAsum):
     updateFirmsStatus()
-    # Statistics.log("  K:%s L:%s pi:%s" % (totalK,totalL,Status.firmsπsum) )
+    # Statistics.log("  K:%s L:%s pi:%s" % (totalK,totalL,Status.firmsProfitssum) )
     # code.interact(local=locals())
 
 
@@ -418,6 +458,7 @@ class Plots:
         zipf = {}  # log K = freq
         for firm in Status.firms:
             if round(firm.K) > 0:
+
                 x = math.log(round(firm.K))
                 if x in zipf:
                     zipf[x] += 1
@@ -485,19 +526,36 @@ class Plots:
         xx2 = []
         xx3 = []
         xx4 = []
+        xx5 = []
+        xx6 = []
         yy = []
+
+        chi = Config.φ * Config.beta * (Config.ω / Config.g)
         for i in range(1, Config.T):
             yy.append(i)
             xx1.append(math.log(Status.firmsKsums[i]))
             xx2.append(math.log(Status.firmsAsums[i]))
             xx3.append(math.log(Status.firmsLsums[i]))
             xx4.append(i * math.log(threshold_estimate(1)))
-        plt.plot(yy, xx1, 'b-', label='logK')
-        plt.plot(yy, xx2, 'r-', label='logA')
-        plt.plot(yy, xx3, 'g-', label='logL')
-        plt.plot(yy, xx4, 'p-', label='A_threshold')
+            xx5.append(math.log(Config.φ * 100 * Config.N * (1 + chi) ** i))
+            xx6.append(math.log(Config.φ * math.log(Status.firmsKsums[i])))
+
         plt.xlabel("t")
         plt.title("Logarithm of aggregate output")
+        from scipy import stats
+        slope1, intercept1, r1, _, std_err1 = stats.linregress(yy, xx1)
+        slope2, intercept2, r2, _, std_err2 = stats.linregress(yy, xx2)
+        slope3, intercept3, r3, _, std_err3 = stats.linregress(yy, xx3)
+        slope4, intercept4, r4, _, std_err4 = stats.linregress(yy, xx4)
+        slope5, intercept5, r5, _, std_err5 = stats.linregress(yy, xx5)
+        slope6, intercept6, r6, _, std_err6 = stats.linregress(yy, xx6)
+        #plt.plot(yy, xx1, 'b-', label='logK (slope=%.5f)' % (slope1))
+        #plt.plot(yy, xx2, 'r-', label='logA (slope=%.5f)' % (slope2))
+        #plt.plot(yy, xx3, 'g-', label='logL (slope=%.5f)' % (slope3))
+        plt.plot(yy, xx4, 'b-', label='A_threshold (slope=%.5f)' % (slope4))
+        plt.plot(yy, xx5, 'r-', label='A_threshold_omar (slope=%.5f)' % (slope5))
+        plt.plot(yy, xx6, 'g-', label='logY (slope=%.5f)' % (slope6))
+
         plt.legend(loc=0)
         plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/aggregate_output.svg")
 
@@ -635,7 +693,7 @@ class Plots:
         yy = []
         for i in range(150, Config.T):
             xx.append(i)
-            yy.append(Statistics.firmsπ[i] / Statistics.firmsNum[i])
+            yy.append(Statistics.firmsProfits[i] / Statistics.firmsNum[i])
         plt.plot(xx, yy, 'b-')
         plt.ylabel("avg profits")
         plt.xlabel("t")
@@ -720,7 +778,7 @@ class Plots:
         plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/newFirmA.svg")
 
     @staticmethod
-    def plot_interest_rate(show):
+    def disabled_plot_interest_rate(show):
         Statistics.log("interest_rate")
         plt.clf()
         xx2 = []
@@ -733,6 +791,40 @@ class Plots:
         plt.xlabel("t")
         plt.title("Mean interest rates of companies")
         plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/interest_rate.svg")
+
+    @staticmethod
+    def plot_interest_rate_with_error(show):
+        Statistics.log("interest_rate_with_error")
+        plt.clf()
+        xx = []
+        yy_errsup = []
+        yy_errinf = []
+        yy = []
+        median = []
+        ##statistics.stdev(data, xbar)
+        for i in range(Config.T):
+            xx.append(i)
+            yy.append(Statistics.rates[i][0])
+            median.append(Statistics.rates[i][2])
+            yy_errsup.append(Statistics.rates[i][0] + Statistics.rates[i][1])
+            yy_errinf.append(Statistics.rates[i][0] - Statistics.rates[i][1])
+        plt.figure(figsize=(12, 8))
+        plt.plot(xx, yy_errsup, 'c-')
+        plt.plot(xx, yy_errinf, 'c-')
+        plt.plot(xx, yy, 'b-', label="mean")
+        plt.ylabel("mean rate")
+        plt.xlabel("t")
+        plt.title("Interest rate")
+        plt.legend(loc=0)
+        plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/interest_rate_error.svg")
+        plt.clf()
+        plt.figure(figsize=(12, 8))
+        plt.plot(xx, median, 'g-', label="median")
+        plt.ylabel("median rate")
+        plt.xlabel("t")
+        plt.title("Interest rate")
+        plt.legend(loc=0)
+        plt.show() if show else plt.savefig(OUTPUT_DIRECTORY + "/interest_rate_median.svg")
 
     @staticmethod
     def plot_growth_rate(show):
@@ -761,8 +853,8 @@ class Plots:
         axs[0].set_xlabel('FirmsK')
         axs[0].set_ylabel('counts')
 
-        axs[1].hist(x=Statistics.firmsπ, bins=20, color="#3182bd", alpha=0.5)
-        axs[1].plot(Statistics.firmsπ, np.full_like(Statistics.firmsπ, -0.01), '|k', markeredgewidth=1)
+        axs[1].hist(x=Statistics.firmsProfits, bins=20, color="#3182bd", alpha=0.5)
+        axs[1].plot(Statistics.firmsProfits, np.full_like(Statistics.firmsProfits, -0.01), '|k', markeredgewidth=1)
         axs[1].set_title('FirmsL distribution')
         axs[1].set_xlabel('FirmsL')
         axs[1].set_ylabel('counts')
@@ -795,11 +887,14 @@ def generate_dataframe_from_statistics():
             'bankruptcy': Statistics.bankruptcy,
             'firmsK': Statistics.firmsK,
             'firmsL': Statistics.firmsL,
-            'firmsProfit': Statistics.firmsπ,
+            'firmsA': Statistics.firmsA,
+            'firmsProfit': Statistics.firmsProfits,
             'rate': Statistics.rate,
             'bankL': Statistics.bankL,
+            'bankE': Statistics.bankE,
+            'bankD': Statistics.bankD,
             'bankB': Statistics.bankB,
-            'bankProfit': Statistics.bankπ,
+            'bankProfit': Statistics.bankProfit,
         }
     )
 
@@ -813,6 +908,30 @@ def _config_description_():
     return description
 
 
+
+def enumerate_results():
+    return (
+        "firmsNum",
+        "firmsNEntry",
+        "bankruptcy",
+        "firmsK",
+        "firmsL",
+        "firmsProfits",
+        "rate",
+        "bankL",
+        "bankB",
+        "bankProfit",
+        "best_networth_firm",
+        "worst_networth_firm",
+        "worst_networth",
+        "best_networth_rate",
+        "rate_without_best_networth",
+        "best_networth_A_percentage",
+        "A_threshold",
+
+    )
+
+
 def save_results(filename, interactive=False):
     progress_bar = None
     if interactive:
@@ -821,54 +940,56 @@ def save_results(filename, interactive=False):
     if progress_bar:
         progress_bar.update()
     filename = os.path.basename(filename).rsplit('.', 1)[0]
-    with open(f"{OUTPUT_DIRECTORY}\\{filename}.inp", 'w', encoding="utf-8") as script:
-        script.write(f"open {filename}.csv\n")
-        script.write("setobs 1 1 --special-time-series\n")
-        script.write(f"gnuplot firmsK --time-series --with-lines --output=display\n")
+
+    E = lxml.builder.ElementMaker()
+    GRETLDATA = E.gretldata
+    DESCRIPTION = E.description
+    VARIABLES = E.variables
+    VARIABLE = E.variable
+    OBSERVATIONS = E.observations
+    OBS = E.obs
+    variables = VARIABLES(count=f"{sum(1 for _ in enumerate_results())}")
+    for variable_name in enumerate_results():
+        variables.append(VARIABLE(name=f"{variable_name}"))
+
+    observations = OBSERVATIONS(count=f"{Config.T}", labels="false")
+    for i in range(Config.T):
+        string_obs = ''
+        for variable_name in enumerate_results():
+            string_obs += f"{getattr(Statistics, variable_name)[i]}  "
+        observations.append(OBS(string_obs))
+    gdt_result = GRETLDATA(
+        DESCRIPTION(_config_description_()),
+        variables,
+        observations,
+        version="1.4", name='jebo', frequency="special:1", startobs="1",
+        endobs=f"{Config.T}", type="time-series"
+    )
+    with gzip.open(f"{OUTPUT_DIRECTORY}\\{filename}.gdt", 'w') as output_file:
+        output_file.write(
+            b'<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE gretldata SYSTEM "gretldata.dtd">\n')
+        output_file.write(
+            lxml.etree.tostring(gdt_result, pretty_print=True, encoding=str).encode('utf-8'))
+
+    # with open(f"{OUTPUT_DIRECTORY}\\{filename}.inp", 'w', encoding="utf-8") as script:
+    #    script.write(f"open {filename}.csv\n")
+    #    script.write("setobs 1 1 --special-time-series\n")
+    #    script.write(f"gnuplot firmsK --time-series --with-lines --output=display\n")
     with open(f"{OUTPUT_DIRECTORY}\\{filename}.csv", 'w', encoding="utf-8") as results:
-        results.write(f"# {_config_description_()}\n")
-        results.write(f"  t{'firmsNum':>15}")
-        results.write(f"{'firmsNEntry':>15}")
-        results.write(f"{'bankruptcy':>15}")
-        results.write(f"{'firmsK':>15}")
-        results.write(f"{'firmsL':>15}")
-        results.write(f"{'firmsProfit':>15}")
-        results.write(f"{'rate':>10}")
-        results.write(f"{'bankL':>15}")
-        results.write(f"{'bankB':>15}")
-        results.write(f"{'bankProfit':>15}")
-        results.write(f"{'bestA_id':>15}")
-        results.write(f"{'worstA_id':>15}")
-        results.write(f"{'worstA':>15}")
-        results.write(f"{'bestA_r':>15}")
-        results.write(f"{'others_r':>15}")
-        results.write(f"{'bestA_percen':>15}")
-        results.write(f"{'A_threshold':>15}")
+        results.write(f"# {_config_description_()}\n  t")
+        for variable_name in enumerate_results():
+            results.write(f";{variable_name:>15}")
         results.write(f"\n")
         for i in range(Config.T):
             line = f"{i:>3}"
-            line += f"{Statistics.firmsNum[i]:15.2f}"
-            line += f"{Statistics.firmsNEntry[i]:15.2f}"
-            line += f"{Statistics.bankruptcy[i]:15.2f}"
-            line += f"{Statistics.firmsK[i]:15.2f}"
-            line += f"{Statistics.firmsL[i]:15.2f}"
-            line += f"{Statistics.firmsπ[i]:15.2f}"
-            line += f"{Statistics.rate[i]:10.4f}"
-            line += f"{Statistics.bankL[i]:15.2f}"
-            line += f"{Statistics.bankB[i]:15.2f}"
-            line += f"{Statistics.bankπ[i]:15.2f}"
-            line += f"{Statistics.best_networth_firm[i]:15.2f}"
-            line += f"{Statistics.worst_networth_firm[i]:15.2f}"
-            line += f"{Statistics.worst_networth[i]:15.2f}"
-            line += f"{Statistics.best_networth_rate[i]:15.2f}"
-            line += f"{Statistics.rate_without_best_networth[i]:15.2f}"
-            line += f"{Statistics.best_networth_A_percentage[i]:15.2f}"
-            line += f"{Statistics.A_threshold[i]:15.2f}"
+            for variable_name in enumerate_results():
+                line += f";{getattr(Statistics, variable_name)[i]:>15.2f}"
             results.write(f"{line}\n")
             if progress_bar:
                 progress_bar.next()
         if progress_bar:
             progress_bar.finish()
+
 
 
 # %%
@@ -881,7 +1002,7 @@ def doInteractive():
     parser.add_argument("--sizeparam", type=int, default=Config.Ñ,
                         help="Size parameter (default=%s)" % Config.Ñ)
     parser.add_argument("--save", type=str,
-                        help="Save the data/plots in csv/inp in '" + OUTPUT_DIRECTORY + "'")
+                        help="Save the data/plots in csv/gdt in '" + OUTPUT_DIRECTORY + "'")
     parser.add_argument("--log", action="store_true",
                         help="Log (stdout default)")
     parser.add_argument("--t", type=int, default=None, help="Number of steps")
@@ -930,6 +1051,7 @@ def doInteractive():
         save_results(filename=args.save, interactive=True)
 
 
+# noinspection PyUnresolvedReferences
 def is_notebook():
     try:
         __IPYTHON__
@@ -957,7 +1079,7 @@ if __name__ == "__main__":
 
 # In Collab you can do now this:
 # Config.N = 150
-# Statistics.init()
+# Config.λ = 0.55
 # doSimulation()
 # Plots.run()
 # save_results(filename='my_execution')
